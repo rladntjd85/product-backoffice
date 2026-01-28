@@ -8,8 +8,8 @@ services:
     environment:
       MYSQL_DATABASE: pb
       MYSQL_USER: pbuser
-      MYSQL_PASSWORD: pbpass
-      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_PASSWORD:
+      MYSQL_ROOT_PASSWORD:
       TZ: Asia/Seoul
     ports:
       - "3307:3306"
