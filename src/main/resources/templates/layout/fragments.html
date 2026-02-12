@@ -1,0 +1,39 @@
+<div th:fragment="sidebar">
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-2">
+            <div class="list-group list-group-flush">
+
+                <a class="list-group-item list-group-item-action"
+                   th:href="@{/admin}"
+                   th:classappend="${#httpServletRequest.requestURI == '/admin'} ? ' active' : ''">
+                    대시보드
+                </a>
+
+                <a class="list-group-item list-group-item-action"
+                   th:href="@{/admin/users}"
+                   th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/admin/users')} ? ' active' : ''">
+                    사용자
+                </a>
+
+                <a class="list-group-item list-group-item-action"
+                   th:href="@{/admin/categories}"
+                   th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/admin/categories')} ? ' active' : ''">
+                    카테고리
+                </a>
+
+                <a class="list-group-item list-group-item-action"
+                   th:href="@{/admin/products}"
+                   th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/admin/products')} ? ' active' : ''">
+                    상품
+                </a>
+
+                <a class="list-group-item list-group-item-action"
+                   th:href="@{/admin/audits}"
+                   th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/admin/audits')} ? ' active' : ''">
+                    감사로그
+                </a>
+
+            </div>
+        </div>
+    </div>
+</div>

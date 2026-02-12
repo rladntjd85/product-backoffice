@@ -1,6 +1,6 @@
-package com.rladntjd85.backoffice.auth.repository;
+package com.rladntjd85.backoffice.user.repository;
 
-import com.rladntjd85.backoffice.auth.domain.User;
+import com.rladntjd85.backoffice.user.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

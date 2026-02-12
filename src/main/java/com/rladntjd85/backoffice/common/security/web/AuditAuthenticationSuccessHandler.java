@@ -1,8 +1,7 @@
 package com.rladntjd85.backoffice.common.security.web;
 
-import com.rladntjd85.backoffice.audit.repository.AuditLogRepository;
-import com.rladntjd85.backoffice.audit.domain.AuditLog;
-import com.rladntjd85.backoffice.auth.repository.UserRepository;
+import com.rladntjd85.backoffice.user.repository.UserRepository;
+import com.rladntjd85.backoffice.auth.service.AuthAuditService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,7 +17,7 @@ import java.io.IOException;
 public class AuditAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
-    private final AuditLogRepository auditLogRepository;
+    private final AuthAuditService authAuditService;
     private final RequestMetaResolver requestMetaResolver;
 
     @Override
@@ -33,18 +32,8 @@ public class AuditAuthenticationSuccessHandler implements AuthenticationSuccessH
 
         var meta = requestMetaResolver.resolve(request);
 
-        auditLogRepository.save(
-                AuditLog.of(
-                        userId,
-                        "LOGIN_SUCCESS",
-                        "AUTH",
-                        null,
-                        meta.ip(),
-                        meta.userAgent(),
-                        null
-                )
-        );
+        authAuditService.onLoginSuccess(email, meta.ip(), meta.userAgent());
 
-        response.sendRedirect("/admin"); // 필요 시 변경
+        response.sendRedirect("/admin");
     }
 }

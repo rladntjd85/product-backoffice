@@ -1,7 +1,6 @@
 package com.rladntjd85.backoffice.common.security.web;
 
-import com.rladntjd85.backoffice.audit.domain.AuditLog;
-import com.rladntjd85.backoffice.audit.repository.AuditLogRepository;
+import com.rladntjd85.backoffice.auth.service.AuthAuditService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,8 +15,8 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class AuditAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
-    private final AuditLogRepository auditLogRepository;
     private final RequestMetaResolver requestMetaResolver;
+    private final AuthAuditService authAuditService;
 
     @Override
     public void onAuthenticationFailure(
@@ -26,18 +25,14 @@ public class AuditAuthenticationFailureHandler implements AuthenticationFailureH
             AuthenticationException exception
     ) throws IOException, ServletException {
 
+        String email = request.getParameter("email");
         var meta = requestMetaResolver.resolve(request);
 
-        auditLogRepository.save(
-                AuditLog.of(
-                        null,
-                        "LOGIN_FAIL",
-                        "AUTH",
-                        null,
-                        meta.ip(),
-                        meta.userAgent(),
-                        "{\"reason\":\"" + safe(exception.getClass().getSimpleName()) + "\"}"
-                )
+        authAuditService.onLoginFailure(
+                email,
+                meta.ip(),
+                meta.userAgent(),
+                exception.getClass().getSimpleName()
         );
 
         response.sendRedirect("/login?error");

@@ -62,7 +62,7 @@ public class SecurityConfig {
                                 "/", "/login", "/logout",
                                 "/css/**", "/js/**", "/img/**", "/uploads/**"
                         ).permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/templates/admin/**").hasRole("ADMIN")
                         .requestMatchers("/products/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()
                 )

@@ -1,6 +1,6 @@
 package com.rladntjd85.backoffice.auth.service;
 
-import com.rladntjd85.backoffice.auth.repository.UserRepository;
+import com.rladntjd85.backoffice.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.*;
