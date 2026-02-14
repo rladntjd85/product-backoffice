@@ -1,35 +1,68 @@
+<!-- templates/layout/fragments.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security"
+      lang="ko">
+<body>
+
+<!-- Topbar Fragment -->
+<div th:fragment="topbar(brandTitle)">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-semibold"
+               th:href="@{/admin}"
+               th:text="${brandTitle} ?: 'Backoffice'">Backoffice</a>
+
+            <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-outline-light btn-sm" th:href="@{/account/password}">비밀번호 변경</a>
+
+                <form method="post" th:action="@{/logout}" class="m-0">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button class="btn btn-outline-light btn-sm" type="submit">로그아웃</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+</div>
+
+<!-- Sidebar Fragment (active: currentUri 기반 자동 처리) -->
 <div th:fragment="sidebar">
     <div class="card shadow-sm border-0">
         <div class="card-body p-2">
             <div class="list-group list-group-flush">
 
                 <a class="list-group-item list-group-item-action"
+                   sec:authorize="hasAnyRole('ADMIN','MD')"
                    th:href="@{/admin}"
-                   th:classappend="${#httpServletRequest.requestURI == '/admin'} ? ' active' : ''">
+                   th:classappend="${currentUri == '/admin' or currentUri == '/admin/'} ? ' active' : ''">
                     대시보드
                 </a>
 
                 <a class="list-group-item list-group-item-action"
                    th:href="@{/admin/users}"
-                   th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/admin/users')} ? ' active' : ''">
+                   sec:authorize="hasAnyRole('ADMIN')"
+                   th:classappend="${#strings.startsWith(currentUri, '/admin/users')} ? ' active' : ''">
                     사용자
                 </a>
 
                 <a class="list-group-item list-group-item-action"
                    th:href="@{/admin/categories}"
-                   th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/admin/categories')} ? ' active' : ''">
+                   sec:authorize="hasAnyRole('ADMIN','MD')"
+                   th:classappend="${#strings.startsWith(currentUri, '/admin/categories')} ? ' active' : ''">
                     카테고리
                 </a>
 
                 <a class="list-group-item list-group-item-action"
                    th:href="@{/admin/products}"
-                   th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/admin/products')} ? ' active' : ''">
+                   sec:authorize="hasAnyRole('ADMIN','MD')"
+                   th:classappend="${#strings.startsWith(currentUri, '/admin/products')} ? ' active' : ''">
                     상품
                 </a>
 
                 <a class="list-group-item list-group-item-action"
                    th:href="@{/admin/audits}"
-                   th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/admin/audits')} ? ' active' : ''">
+                   sec:authorize="hasAnyRole('ADMIN')"
+                   th:classappend="${#strings.startsWith(currentUri, '/admin/audits')} ? ' active' : ''">
                     감사로그
                 </a>
 
@@ -37,3 +70,6 @@
         </div>
     </div>
 </div>
+
+</body>
+</html>

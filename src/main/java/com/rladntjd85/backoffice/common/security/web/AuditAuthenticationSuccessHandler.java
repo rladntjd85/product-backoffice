@@ -1,5 +1,7 @@
 package com.rladntjd85.backoffice.common.security.web;
 
+import com.rladntjd85.backoffice.auth.domain.Role;
+import com.rladntjd85.backoffice.user.domain.User;
 import com.rladntjd85.backoffice.user.repository.UserRepository;
 import com.rladntjd85.backoffice.auth.service.AuthAuditService;
 import jakarta.servlet.ServletException;
@@ -25,15 +27,26 @@ public class AuditAuthenticationSuccessHandler implements AuthenticationSuccessH
             HttpServletRequest request,
             HttpServletResponse response,
             Authentication authentication
-    ) throws IOException, ServletException {
+    ) throws IOException {
 
         String email = authentication.getName();
-        Long userId = userRepository.findByEmail(email).map(u -> u.getId()).orElse(null);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow();
 
         var meta = requestMetaResolver.resolve(request);
 
         authAuditService.onLoginSuccess(email, meta.ip(), meta.userAgent());
 
-        response.sendRedirect("/admin");
+        if (user.isMustChangePassword()) {
+            response.sendRedirect("/auth/password-change");
+            return;
+        }
+
+        if (user.getRole() == Role.ADMIN || user.getRole() == Role.MD) {
+            response.sendRedirect("/admin");
+            return;
+        }
+        response.sendRedirect("/user");
     }
 }

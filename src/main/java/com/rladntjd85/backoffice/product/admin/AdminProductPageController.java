@@ -1,12 +1,13 @@
 package com.rladntjd85.backoffice.product.admin;
 
+import com.rladntjd85.backoffice.common.web.admin.BaseAdminController;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/admin/products")
-public class AdminProductPageController {
+public class AdminProductPageController extends BaseAdminController {
 
     @GetMapping
     public String list(Model model,
@@ -15,33 +16,25 @@ public class AdminProductPageController {
                        @RequestParam(required = false) String status,
                        @RequestParam(required = false, defaultValue = "CREATED_DESC") String sort) {
 
-        model.addAttribute("pageTitle", "상품 목록");
-        model.addAttribute("content", "admin/products/list :: content");
-
-        // 검색값 유지(데이터 붙일 때 그대로 사용)
         model.addAttribute("q", q);
         model.addAttribute("categoryId", categoryId);
         model.addAttribute("status", status);
         model.addAttribute("sort", sort);
 
-        return "layout/admin-layout";
+        return render(model, "상품 목록", "admin/products/list");
     }
 
     @GetMapping("/new")
     public String createForm(Model model) {
-        model.addAttribute("pageTitle", "상품 등록");
-        model.addAttribute("content", "admin/products/form :: content");
         model.addAttribute("mode", "CREATE");
-        return "layout/admin-layout";
+        return render(model, "상품 등록", "admin/products/form");
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
-        model.addAttribute("pageTitle", "상품 수정");
-        model.addAttribute("content", "admin/products/form :: content");
         model.addAttribute("mode", "EDIT");
         model.addAttribute("productId", id);
-        return "layout/admin-layout";
+        return render(model, "상품 수정", "admin/products/form");
     }
 
     // 저장(등록/수정) 자리

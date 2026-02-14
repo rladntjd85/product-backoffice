@@ -55,29 +55,56 @@
       </tr>
       </thead>
       <tbody>
-      <!-- 더미 -->
-      <tr>
-        <td>101</td>
-        <td>2026-02-10 12:00:00</td>
-        <td><span class="badge text-bg-secondary">LOGIN_FAIL</span></td>
-        <td>-</td>
-        <td>USER#1</td>
-        <td>127.0.0.1</td>
-        <td class="text-truncate" style="max-width: 220px;">Chrome...</td>
-        <td class="text-truncate" style="max-width: 260px;">{"email":"admin@local.com","reason":"BadCredentialsException"}</td>
+      <tr th:each="log : ${result.content}">
+        <td th:text="${log.id}"></td>
+        <td th:text="${#temporals.format(log.createdAt,'yyyy-MM-dd HH:mm:ss')}"></td>
+        <td>
+        <span class="badge text-bg-secondary"
+              th:text="${log.actionType}"></span>
+        </td>
+        <td th:text="${log.actorUserId != null ? log.actorUserId : '-'}"></td>
+        <td th:text="${log.targetType + (log.targetId != null ? '#' + log.targetId : '')}"></td>
+        <td th:text="${log.ip}"></td>
+        <td class="text-truncate" style="max-width:220px;"
+            th:text="${log.userAgent}"></td>
+        <td class="text-truncate" style="max-width:260px;"
+            th:text="${log.diffJson}"></td>
+      </tr>
+
+      <tr th:if="${result.totalElements == 0}">
+        <td colspan="8" class="text-center text-muted">데이터가 없습니다.</td>
       </tr>
       </tbody>
+
     </table>
   </div>
 
-  <!-- 페이지네이션 UI만 -->
-  <nav aria-label="Page navigation" class="mt-3">
+  <nav th:if="${result.totalPages > 1}" class="mt-3">
     <ul class="pagination pagination-sm justify-content-center mb-0">
-      <li class="page-item disabled"><a class="page-link" href="#">이전</a></li>
-      <li class="page-item active"><a class="page-link" href="#">1</a></li>
-      <li class="page-item"><a class="page-link" href="#">2</a></li>
-      <li class="page-item"><a class="page-link" href="#">3</a></li>
-      <li class="page-item"><a class="page-link" href="#">다음</a></li>
+
+      <li class="page-item" th:classappend="${result.first}? ' disabled'">
+        <a class="page-link"
+           th:href="@{/admin/audits(page=${result.number-1},action=${action},targetType=${targetType},targetId=${targetId},actorId=${actorId})}">
+          이전
+        </a>
+      </li>
+
+      <li class="page-item"
+          th:each="i : ${#numbers.sequence(0, result.totalPages-1)}"
+          th:classappend="${i == result.number}? ' active'">
+        <a class="page-link"
+           th:text="${i+1}"
+           th:href="@{/admin/audits(page=${i},action=${action},targetType=${targetType},targetId=${targetId},actorId=${actorId})}">
+        </a>
+      </li>
+
+      <li class="page-item" th:classappend="${result.last}? ' disabled'">
+        <a class="page-link"
+           th:href="@{/admin/audits(page=${result.number+1},action=${action},targetType=${targetType},targetId=${targetId},actorId=${actorId})}">
+          다음
+        </a>
+      </li>
+
     </ul>
   </nav>
 

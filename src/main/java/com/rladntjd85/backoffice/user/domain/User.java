@@ -31,6 +31,9 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false, length = 10)
     private Role role;
 
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword;
+
     @Column(nullable = false)
     private boolean enabled;
 
@@ -42,17 +45,6 @@ public class User extends BaseTimeEntity {
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
-
-    public void increaseFailCountAndLockIfNeeded(int maxFail) {
-        this.failedLoginCount++;
-        if (this.failedLoginCount >= maxFail) {
-            this.locked = true;
-        }
-    }
-
-    public void resetFailCount() {
-        this.failedLoginCount = 0;
-    }
 
     public void unlock() {
         this.locked = false;
@@ -84,4 +76,10 @@ public class User extends BaseTimeEntity {
         this.lastLoginAt = java.time.LocalDateTime.now();
     }
 
+    public void changeName(String name) { this.name = name; }
+    public void changeRole(Role role) { this.role = role; }
+    public void updatePasswordHash(String hash) { this.passwordHash = hash; }
+    public void markMustChangePassword(boolean v) { this.mustChangePassword = v; }
+    public void enable() { this.enabled = true; }
+    public void disable() { this.enabled = false; }
 }

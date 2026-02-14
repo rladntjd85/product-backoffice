@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<body>
+<div th:fragment="content" th:with="r=${createResult}">
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="mb-3">사용자 생성 완료</h5>
+
+            <dl class="row mb-0">
+                <dt class="col-3">ID</dt><dd class="col-9" th:text="${r.userId}">1</dd>
+                <dt class="col-3">이메일</dt><dd class="col-9" th:text="${r.email}">user@local.com</dd>
+                <dt class="col-3">이름</dt><dd class="col-9" th:text="${r.name}">홍길동</dd>
+                <dt class="col-3">권한</dt>
+                <dd class="col-9"><span class="badge text-bg-secondary" th:text="${r.role}">VIEWER</span></dd>
+            </dl>
+
+            <hr/>
+
+            <div th:if="${r.tempPasswordOrNull != null}">
+                <div class="alert alert-warning">
+                    임시 비밀번호(1회 노출): <strong th:text="${r.tempPasswordOrNull}">TEMP</strong><br/>
+                    <div class="small text-muted">이 화면을 벗어나면 다시 조회할 수 없습니다.</div>
+                </div>
+
+                <div class="form-check my-2">
+                    <input class="form-check-input" type="checkbox" id="copiedCheck">
+                    <label class="form-check-label" for="copiedCheck">
+                        임시 비밀번호를 복사/전달했습니다.
+                    </label>
+                </div>
+            </div>
+
+            <div th:if="${r.tempPasswordOrNull == null}" class="alert alert-info">
+                관리자가 입력한 비밀번호로 설정되었습니다. (보안상 다시 표시하지 않습니다)
+            </div>
+
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-secondary" href="/admin/users/new">추가 생성</a>
+                <a class="btn btn-primary" href="/admin/users">사용자 목록으로</a>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
