@@ -14,7 +14,9 @@
                th:text="${brandTitle} ?: 'Backoffice'">Backoffice</a>
 
             <div class="d-flex align-items-center gap-2">
-                <a class="btn btn-outline-light btn-sm" th:href="@{/account/password}">비밀번호 변경</a>
+                <a class="btn btn-outline-light btn-sm"
+                   th:href="@{/auth/password-change}"
+                   th:classappend="${currentUri == '/auth/password-change'} ? ' active' : ''">비밀번호 변경</a>
 
                 <form method="post" th:action="@{/logout}" class="m-0">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>

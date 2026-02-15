@@ -37,7 +37,6 @@ out/
 .vscode/
 
 # Docker Compose 파일 제외
-docker-compose.yml
 application-local.yml
 
 # 민감 정보가 담긴 환경 변수 파일 제외

@@ -44,7 +44,7 @@ public class MustChangePasswordInterceptor implements HandlerInterceptor {
                 .orElse(false);
 
         if (mustChange) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            response.sendRedirect("/auth/password-change");
             return false;
         }
 

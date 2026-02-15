@@ -27,4 +27,25 @@ public class AccountService {
         user.resetFailedLoginCount();
         user.unlock();
     }
+
+    @Transactional
+    public void changePasswordWithCurrent(String email, String currentPassword, String newPassword) {
+        PasswordValidator.validatePassword(newPassword);
+
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
+        if (currentPassword == null || currentPassword.isBlank()) {
+            throw new IllegalArgumentException("현재 비밀번호를 입력하세요.");
+        }
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("현재 비밀번호가 올바르지 않습니다.");
+        }
+
+        user.updatePasswordHash(passwordEncoder.encode(newPassword));
+        user.markMustChangePassword(false);
+        user.resetFailedLoginCount();
+        user.unlock();
+    }
+
 }
