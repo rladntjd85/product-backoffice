@@ -30,42 +30,36 @@
     <div class="card shadow-sm border-0">
         <div class="card-body p-2">
             <div class="list-group list-group-flush">
-
                 <a class="list-group-item list-group-item-action"
                    sec:authorize="hasAnyRole('ADMIN','MD')"
                    th:href="@{/admin}"
                    th:classappend="${currentUri == '/admin' or currentUri == '/admin/'} ? ' active' : ''">
                     대시보드
                 </a>
-
                 <a class="list-group-item list-group-item-action"
                    th:href="@{/admin/users}"
                    sec:authorize="hasAnyRole('ADMIN')"
                    th:classappend="${#strings.startsWith(currentUri, '/admin/users')} ? ' active' : ''">
                     사용자
                 </a>
-
                 <a class="list-group-item list-group-item-action"
                    th:href="@{/admin/categories}"
                    sec:authorize="hasAnyRole('ADMIN','MD')"
                    th:classappend="${#strings.startsWith(currentUri, '/admin/categories')} ? ' active' : ''">
                     카테고리
                 </a>
-
                 <a class="list-group-item list-group-item-action"
                    th:href="@{/admin/products}"
                    sec:authorize="hasAnyRole('ADMIN','MD')"
                    th:classappend="${#strings.startsWith(currentUri, '/admin/products')} ? ' active' : ''">
                     상품
                 </a>
-
                 <a class="list-group-item list-group-item-action"
                    th:href="@{/admin/audits}"
                    sec:authorize="hasAnyRole('ADMIN')"
                    th:classappend="${#strings.startsWith(currentUri, '/admin/audits')} ? ' active' : ''">
                     감사로그
                 </a>
-
             </div>
         </div>
     </div>
