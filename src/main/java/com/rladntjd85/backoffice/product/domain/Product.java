@@ -13,7 +13,8 @@ import lombok.*;
 @Table(name = "products")
 public class Product extends BaseTimeEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -62,5 +63,15 @@ public class Product extends BaseTimeEntity {
 
     public void softDelete() {
         this.status = ProductStatus.DELETED;
+    }
+
+    public void clearThumbnail() {
+        this.thumbnailUrl = null;
+        this.thumbnailOriginalName = null;
+    }
+
+    public void clearDetailImage() {
+        this.detailImageUrl = null;
+        this.detailOriginalName = null;
     }
 }

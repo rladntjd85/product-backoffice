@@ -35,6 +35,7 @@ dependencies {
     /* === Spring Boot 기본 === */
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
     /* === View (관리자 화면) === */
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'

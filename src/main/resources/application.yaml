@@ -1,4 +1,19 @@
+app:
+  upload:
+    root-dir: ./upload
+
+server:
+  tomcat:
+    max-http-form-post-size: 10MB
+    max-swallow-size: 10MB
+
 spring:
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+      resolve-lazily: true
+
   profiles:
     active: local
 
@@ -8,6 +23,15 @@ spring:
       hibernate:
         format_sql: true
         show_sql: false
+
+  thymeleaf:
+    cache: false # 타임리프 캐시 비활성화 (정상)
+
+  devtools: # 위치를 spring 바로 아래로 변경
+    livereload:
+      enabled: true
+    restart:
+      enabled: true # 코드 변경 시 서버 자동 재시작 (선택)
 
 logging:
   level:

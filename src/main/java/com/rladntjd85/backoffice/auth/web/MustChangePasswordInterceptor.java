@@ -27,7 +27,7 @@ public class MustChangePasswordInterceptor implements HandlerInterceptor {
                 || uri.startsWith("/error")
                 || uri.startsWith("/css/")
                 || uri.startsWith("/js/")
-                || uri.startsWith("/img/")
+                || uri.startsWith("/static/img/")
                 || uri.startsWith("/uploads/")
                 || uri.equals("/favicon.ico")) {
             return true;

@@ -63,6 +63,7 @@ public class AdminUserPageController extends BaseAdminController {
         var u = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("user not found: " + id));
         model.addAttribute("u", u);
+        model.addAttribute("enabledAdminCount", userRepository.countByRoleAndEnabledTrue(Role.ADMIN));
         return render(model, "사용자 상세", "admin/users/detail");
     }
 
@@ -127,8 +128,13 @@ public class AdminUserPageController extends BaseAdminController {
     }
 
     @PostMapping("/{id}/disable")
-    public String disable(@PathVariable Long id) {
-        adminUserService.disable(id);
+    public String disable(@PathVariable Long id, RedirectAttributes ra) {
+        try {
+            adminUserService.disable(id);
+            ra.addFlashAttribute("msg", "계정이 비활성화되었습니다.");
+        } catch (IllegalStateException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        }
         return "redirect:/admin/users/" + id;
     }
 

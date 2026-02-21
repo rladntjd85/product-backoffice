@@ -68,7 +68,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/", "/login", "/logout",
                                 "/error", "/error/**",
-                                "/css/**", "/js/**", "/img/**", "/uploads/**"
+                                "/css/**", "/js/**", "/static/img/**", "/uploads/**"
                         ).permitAll()
 
                         .requestMatchers("/auth/password-change").authenticated()
@@ -80,6 +80,13 @@ public class SecurityConfig {
                         .requestMatchers("/admin/users/**").hasRole("ADMIN") // 사용자 운영은 ADMIN만
                         .requestMatchers("/admin/audit/**").hasRole("ADMIN") // 사용자 운영은 ADMIN만
 
+                        // 상품 KPI/재고 알림은 ADMIN, MD 모두
+                        .requestMatchers("/admin/api/dashboard/summary").hasAnyRole("ADMIN", "MD")
+                        .requestMatchers("/admin/api/dashboard/stock-alerts").hasAnyRole("ADMIN", "MD")
+
+                        // 감사 관련은 ADMIN만
+                        .requestMatchers("/admin/api/dashboard/audit/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/api/dashboard/recent-audits").hasRole("ADMIN")
                         // /admin 대시보드는 ADMIN만
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
@@ -97,10 +104,31 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(ex -> ex
                         .accessDeniedHandler((request, response, ex2) -> {
-                            // 콘솔 로그
-                            System.out.println("[ACCESS DENIED] uri=" + request.getRequestURI()
-                                    + " user=" + (request.getUserPrincipal() != null ? request.getUserPrincipal().getName() : "anonymous"));
-                            // 에러 페이지로 이동(템플릿 만들어야 함)
+
+                            // 1) CSRF 토큰 불일치(업로드 초과/요청 깨짐 등)면 폼으로 되돌리기
+                            if (ex2 instanceof org.springframework.security.web.csrf.InvalidCsrfTokenException) {
+
+                                String uri = request.getRequestURI(); // /admin/products 또는 /admin/products/{id}
+                                String msg = "파일 용량은 최대 5MB입니다. 다시 시도하세요.";
+
+                                // 등록 POST(/admin/products) → /new로
+                                if ("/admin/products".equals(uri)) {
+                                    response.sendRedirect("/admin/products/new?error=" + java.net.URLEncoder.encode(msg, "UTF-8"));
+                                    return;
+                                }
+
+                                // 수정 POST(/admin/products/{id}) → /{id}/edit로
+                                if (uri.matches("^/admin/products/\\d+$")) {
+                                    String id = uri.substring(uri.lastIndexOf("/") + 1);
+                                    response.sendRedirect("/admin/products/" + id + "/edit?error=" + java.net.URLEncoder.encode(msg, "UTF-8"));
+                                    return;
+                                }
+
+                                response.sendRedirect("/admin/products?error=" + java.net.URLEncoder.encode(msg, "UTF-8"));
+                                return;
+                            }
+
+                            // 2) 그 외 권한 부족은 403
                             response.sendRedirect("/error/403");
                         })
                 )

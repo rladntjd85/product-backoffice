@@ -3,64 +3,125 @@
 <body>
 <div th:fragment="content">
 
-  <form method="post" th:action="@{/admin/products}" class="row g-3">
-    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+    <div class="alert alert-danger" th:if="${param.error}" th:text="${param.error}"></div>
 
-    <!-- 수정 모드일 때 productId 유지(데이터 연결 시 사용) -->
-    <input type="hidden" name="id" th:value="${productId}"/>
+    <!-- 삭제용 폼 2개: 메인 폼 바깥(중첩 금지 해결) -->
+    <form id="thumbRemoveForm" method="post" th:if="${mode=='EDIT' and !#strings.isEmpty(currentThumbUrl)}"
+            th:action="@{|/admin/products/${productId}/thumbnail/remove|}"
+            onsubmit="return confirm('썸네일 이미지를 삭제하고 기본 이미지로 변경합니다. 진행할까요?');">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    </form>
 
-    <div class="col-12 col-md-4">
-      <label class="form-label">상품번호(SKU)</label>
-      <input class="form-control" name="sku" placeholder="예: SKU-0001">
-    </div>
+    <form id="detailRemoveForm" method="post" th:if="${mode=='EDIT' and !#strings.isEmpty(currentDetailUrl)}"
+            th:action="@{|/admin/products/${productId}/detail/remove|}"
+            onsubmit="return confirm('상세 이미지를 삭제하고 기본 이미지로 변경합니다. 진행할까요?');">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    </form>
 
-    <div class="col-12 col-md-8">
-      <label class="form-label">상품명</label>
-      <input class="form-control" name="name" placeholder="상품명">
-    </div>
+    <!-- 메인 저장 폼 -->
+    <form method="post" th:action="${mode=='EDIT'} ? @{|/admin/products/${productId}|} : @{/admin/products}"
+            th:object="${form}" class="row g-3" enctype="multipart/form-data">
 
-    <div class="col-12 col-md-4">
-      <label class="form-label">카테고리</label>
-      <select class="form-select" name="categoryId">
-        <option value="">선택</option>
-        <!-- TODO: 카테고리 데이터 붙이면 option 렌더링 -->
-      </select>
-    </div>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
-    <div class="col-12 col-md-4">
-      <label class="form-label">가격</label>
-      <input class="form-control" name="price" type="number" min="0" step="1" placeholder="0">
-    </div>
+        <div class="col-12 col-md-8">
+            <label class="form-label">상품명</label> <input class="form-control" th:field="*{name}" placeholder="상품명"
+                th:classappend="${#fields.hasErrors('name')} ? ' is-invalid' : ''">
+            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+        </div>
 
-    <div class="col-12 col-md-4">
-      <label class="form-label">재고</label>
-      <input class="form-control" name="stock" type="number" min="0" step="1" placeholder="0">
-    </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">카테고리</label> <select class="form-select" th:field="*{categoryId}">
+            <option value="">선택</option>
+            <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
+        </select>
+            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('categoryId')}"
+                    th:errors="*{categoryId}"></div>
+        </div>
 
-    <div class="col-12 col-md-4">
-      <label class="form-label">상태</label>
-      <select class="form-select" name="status">
-        <option value="ACTIVE">판매중</option>
-        <option value="INACTIVE">판매중지</option>
-      </select>
-    </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">가격(원)</label> <input class="form-control" th:field="*{price}" type="number"
+                min="0" step="1">
+            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></div>
+        </div>
 
-    <div class="col-12 col-md-8">
-      <label class="form-label">썸네일 URL(선택)</label>
-      <input class="form-control" name="thumbnailUrl" placeholder="미입력 시 기본 이미지">
-      <div class="form-text">이미지는 필수 아님. 없으면 기본 이미지로 처리.</div>
-    </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">재고</label> <input class="form-control" th:field="*{stock}" type="number" min="0"
+                step="1">
+            <div class="form-text">재고가 0이면 자동으로 SOLD_OUT 처리됩니다.</div>
+            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('stock')}" th:errors="*{stock}"></div>
+        </div>
 
-    <div class="col-12">
-      <label class="form-label">상세 이미지 URL(선택)</label>
-      <input class="form-control" name="detailImageUrl" placeholder="미입력 시 기본 이미지">
-    </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">상태</label> <select class="form-select" th:field="*{status}">
+            <option value="ACTIVE">판매중</option>
+            <option value="HIDDEN">판매중지</option>
+            <option value="SOLD_OUT">품절(선택해도 재고&gt;0이면 판매중으로 처리)</option>
+        </select>
+            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('status')}" th:errors="*{status}"></div>
+        </div>
 
-    <div class="col-12 d-flex gap-2">
-      <button class="btn btn-primary" type="submit" th:text="${mode == 'EDIT'} ? '수정 저장' : '등록 저장'">등록 저장</button>
-      <a class="btn btn-outline-secondary" href="/admin/products">취소</a>
-    </div>
-  </form>
+        <!-- 썸네일 -->
+        <div class="col-12 col-md-6">
+            <label class="form-label">썸네일 이미지(선택)</label>
+
+            <div class="mb-2" th:if="${mode=='EDIT'}">
+                <img class="img-thumbnail" style="max-height:160px;"
+                        th:src="${#strings.isEmpty(currentThumbUrl) ? '/img/no-image.svg' : currentThumbUrl}"
+                        alt="thumbnail">
+
+                <div class="d-flex align-items-center justify-content-between mt-2">
+                    <div class="text-muted small"
+                            th:text="${#strings.isEmpty(currentThumbOriginalName) ? '기본 이미지' : currentThumbOriginalName}">
+                        기본 이미지
+                    </div>
+
+                    <!-- 삭제 버튼: 외부 폼으로 submit -->
+                    <button class="btn btn-outline-danger btn-sm" type="submit"
+                            th:if="${mode=='EDIT' and !#strings.isEmpty(currentThumbUrl)}" form="thumbRemoveForm">
+                        삭제
+                    </button>
+                </div>
+            </div>
+
+            <input class="form-control" type="file" name="thumbnailFile" accept="image/*">
+            <div class="form-text">jpg/jpeg/png/webp, 최대 5MB</div>
+        </div>
+
+        <!-- 상세 -->
+        <div class="col-12 col-md-6">
+            <label class="form-label">상세 이미지(선택)</label>
+
+            <div class="mb-2" th:if="${mode=='EDIT'}">
+                <img class="img-thumbnail" style="max-height:160px;"
+                        th:src="${#strings.isEmpty(currentDetailUrl) ? '/img/no-image.svg' : currentDetailUrl}"
+                        alt="detail">
+
+                <div class="d-flex align-items-center justify-content-between mt-2">
+                    <div class="text-muted small"
+                            th:text="${#strings.isEmpty(currentDetailOriginalName) ? '기본 이미지' : currentDetailOriginalName}">
+                        기본 이미지
+                    </div>
+
+                    <!-- 삭제 버튼: 외부 폼으로 submit -->
+                    <button class="btn btn-outline-danger btn-sm" type="submit"
+                            th:if="${mode=='EDIT' and !#strings.isEmpty(currentDetailUrl)}" form="detailRemoveForm">
+                        삭제
+                    </button>
+                </div>
+            </div>
+
+            <input class="form-control" type="file" name="detailImageFile" accept="image/*">
+            <div class="form-text">jpg/jpeg/png/webp, 최대 5MB</div>
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+            <button class="btn btn-primary" type="submit" th:text="${mode == 'EDIT'} ? '수정 저장' : '등록 저장'">등록 저장</button>
+            <a class="btn btn-outline-secondary" href="/admin/products">취소</a>
+        </div>
+
+    </form>
 
 </div>
 </body>

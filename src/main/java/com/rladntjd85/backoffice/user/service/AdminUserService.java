@@ -1,8 +1,6 @@
 package com.rladntjd85.backoffice.user.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rladntjd85.backoffice.audit.domain.AuditLog;
-import com.rladntjd85.backoffice.audit.repository.AuditLogRepository;
+import com.rladntjd85.backoffice.audit.service.AuditWriter;
 import com.rladntjd85.backoffice.auth.domain.Role;
 import com.rladntjd85.backoffice.common.security.util.PasswordValidator;
 import com.rladntjd85.backoffice.common.security.util.TempPasswordGenerator;
@@ -15,17 +13,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class AdminUserService {
 
-    public enum Tab { ALL, ACTIVE, DISABLED, LOCKED }
+    public enum Tab {ALL, ACTIVE, DISABLED, LOCKED}
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TempPasswordGenerator tempPasswordGenerator;
-    private final AuditLogRepository auditLogRepository;
-    private final ObjectMapper objectMapper;
+
+    //공통 감사 로거
+    private final AuditWriter auditWriter;
 
     // 생성: 정책상 무조건 VIEWER
     @Transactional
@@ -86,6 +88,15 @@ public class AdminUserService {
     public void disable(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
+        // enabled=true인 ADMIN이 최소 1명은 유지되어야 함
+        if (user.getRole() == Role.ADMIN && user.isEnabled()) {
+            long enabledAdminCount = userRepository.countByRoleAndEnabledTrue(Role.ADMIN);
+            if (enabledAdminCount <= 1) {
+                throw new IllegalStateException("마지막 ADMIN 계정은 비활성화할 수 없습니다.");
+            }
+        }
+
         user.disable();
     }
 
@@ -101,38 +112,26 @@ public class AdminUserService {
 
         Role newRole = Role.valueOf(roleValue);
 
-        if (user.getRole() == Role.ADMIN && newRole != Role.ADMIN) {
-            long adminCount = userRepository.countByRole(Role.ADMIN);
-            if (adminCount <= 1) {
-                throw new IllegalStateException("최소 1명의 ADMIN은 유지되어야 합니다.");
+        if (user.getRole() == Role.ADMIN && newRole != Role.ADMIN && user.isEnabled()) {
+            long enabledAdminCount = userRepository.countByRoleAndEnabledTrue(Role.ADMIN);
+            if (enabledAdminCount <= 1) {
+                throw new IllegalStateException("최소 1명의 ADMIN(활성)은 유지되어야 합니다.");
             }
         }
 
         Role oldRole = user.getRole();
         user.changeRole(newRole);
 
-        try {
-            String diffJson = objectMapper.writeValueAsString(
-                    java.util.Map.of(
-                            "oldRole", oldRole.name(),
-                            "newRole", newRole.name()
-                    )
-            );
-
-            auditLogRepository.save(
-                    AuditLog.builder()
-                            .actorUserId(actorUserId)
-                            .actionType("USER_ROLE_CHANGE")
-                            .targetType("USER")
-                            .targetId(userId)
-                            .ip(ip)
-                            .userAgent(userAgent)
-                            .diffJson(diffJson)
-                            .build()
-            );
-        } catch (Exception e) {
-            throw new RuntimeException("Audit JSON 직렬화 실패", e);
-        }
+        //AuditWriter 사용 (수동 JSON/try-catch 제거)
+        auditWriter.write(
+                actorUserId,
+                "USER_ROLE_CHANGE",
+                "USER",
+                userId,
+                ip,
+                userAgent,
+                AuditWriter.change("role", oldRole.name(), newRole.name())
+        );
     }
 
     @Transactional
@@ -147,26 +146,29 @@ public class AdminUserService {
         user.markMustChangePassword(true);
 
         // 운영 UX: 비번 재발급 시 잠금도 해제
-        user.unlock(); // locked=false + failed=0 (네 엔티티에 이미 존재)
+        user.unlock(); // locked=false + failed=0
 
-        String diffJson = "{\"action\":\"RESET_PASSWORD\",\"mustChangePassword\":true}";
+        //AuditWriter 사용 (하드코딩 JSON 제거)
+        Map<String, Object> diff = new LinkedHashMap<>();
+        diff.put("action", "RESET_PASSWORD");
+        diff.put("mustChangePassword", true);
+        diff.put("unlock", true);
 
-        auditLogRepository.save(
-                com.rladntjd85.backoffice.audit.domain.AuditLog.builder()
-                        .actorUserId(actorUserId)
-                        .actionType("USER_RESET_PASSWORD")
-                        .targetType("USER")
-                        .targetId(userId)
-                        .ip(ip)
-                        .userAgent(userAgent)
-                        .diffJson(diffJson)
-                        .build()
+        auditWriter.write(
+                actorUserId,
+                "USER_RESET_PASSWORD",
+                "USER",
+                userId,
+                ip,
+                userAgent,
+                diff
         );
 
         return new ResetPasswordResult(user.getId(), user.getEmail(), tempPassword);
     }
 
-    public record ResetPasswordResult(Long userId, String email, String tempPassword) {}
+    public record ResetPasswordResult(Long userId, String email, String tempPassword) {
+    }
 
     public record CreateUserResult(
             Long userId,
@@ -174,5 +176,6 @@ public class AdminUserService {
             String name,
             Role role,
             String tempPasswordOrNull
-    ) {}
+    ) {
+    }
 }

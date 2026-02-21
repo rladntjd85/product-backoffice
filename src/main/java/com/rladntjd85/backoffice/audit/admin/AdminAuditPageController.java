@@ -3,6 +3,7 @@ package com.rladntjd85.backoffice.audit.admin;
 import com.rladntjd85.backoffice.audit.service.AdminAuditService;
 import com.rladntjd85.backoffice.common.web.admin.BaseAdminController;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@Slf4j
 @RequiredArgsConstructor
 @Controller
 @RequestMapping("/admin/audits")
@@ -50,6 +52,12 @@ public class AdminAuditPageController extends BaseAdminController {
                 fromDt, toDtExclusive,
                 page, 20
         );
+
+        log.info("result size={}", result.getContent().size());
+
+        if (!result.getContent().isEmpty()) {
+            log.info("first data={}", result.getContent().get(0));
+        }
 
         model.addAttribute("result", result);
         model.addAttribute("action", action);

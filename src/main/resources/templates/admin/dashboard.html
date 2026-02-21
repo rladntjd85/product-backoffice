@@ -1,14 +1,310 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="ko">
-<body>
 <div th:fragment="content">
-  <div class="row g-3">
-    <div class="col-12">
-      <div class="alert alert-secondary mb-0">
-        대시보드 콘텐츠 영역
-      </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="text-muted small">운영 현황 요약</div>
+
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary btn-sm" href="/admin/audits" th:if="${isAdmin}">
+                감사로그
+            </a>
+            <a class="btn btn-primary btn-sm" href="/admin/products/new">상품 등록</a>
+        </div>
     </div>
-  </div>
+
+    <!-- KPI -->
+    <div class="row g-2" id="kpiRow"></div>
+
+    <hr class="my-3"/>
+
+    <!-- ADMIN: 좌(차트/최근활동) + 우(재고알림) -->
+    <div class="row g-3" th:if="${isAdmin}">
+
+        <!-- LEFT -->
+        <div class="col-12 col-lg-8">
+
+            <div class="row g-3">
+                <div class="col-12 col-xl-6">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>최근 7일 이벤트 추이</span>
+                            <span class="text-muted small">audit_log</span>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="dailyChart" height="120"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-xl-6">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>Top Action Type</span>
+                            <span class="text-muted small">최근 7일</span>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="topChart" height="120"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 최근 활동 (높이 제한 + 내부 스크롤) -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>최근 활동</span>
+                    <span class="text-muted small">최근 20건</span>
+                </div>
+
+                <div class="table-responsive" style="max-height: 360px; overflow:auto;">
+                    <table class="table table-sm table-striped align-middle mb-0">
+                        <thead class="sticky-top bg-body">
+                        <tr>
+                            <th style="width:180px;">시각</th>
+                            <th style="width:220px;">액션</th>
+                            <th style="width:120px;">대상</th>
+                            <th style="width:90px;">ID</th>
+                            <th style="width:90px;">행위자</th>
+                            <th style="width:160px;">IP</th>
+                        </tr>
+                        </thead>
+                        <tbody id="recentAuditsBody">
+                        <tr>
+                            <td colspan="6" class="text-muted text-center">로딩중...</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT -->
+        <div class="col-12 col-lg-4">
+
+            <!-- 재고 알림을 상단으로 -->
+            <div class="card">
+                <div class="card-header">재고 알림</div>
+                <div class="card-body">
+
+                    <div class="fw-semibold mb-2">임계치 이하</div>
+                    <ul id="lowStockList" class="list-group list-group-flush">
+                        <li class="list-group-item text-muted">로딩중...</li>
+                    </ul>
+
+                    <div class="fw-semibold mt-3 mb-2">품절</div>
+                    <ul id="soldOutList" class="list-group list-group-flush">
+                        <li class="list-group-item text-muted">로딩중...</li>
+                    </ul>
+
+                </div>
+            </div>
+
+            <!-- (선택) 바로가기: 원하면 유지 -->
+            <div class="card mt-3">
+                <div class="card-header">바로가기</div>
+                <div class="card-body d-grid gap-2">
+                    <a class="btn btn-outline-primary" href="/admin/products?status=SOLD_OUT">품절 상품 보기</a>
+                    <a class="btn btn-outline-secondary" href="/admin/products">상품 목록</a>
+                    <a class="btn btn-outline-secondary" href="/admin/categories">카테고리 관리</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MD: 재고 알림 + 바로가기만 (원하면) -->
+    <div class="row g-3" th:if="${!isAdmin}">
+        <div class="col-12 col-lg-4">
+            <div class="card">
+                <div class="card-header">재고 알림</div>
+                <div class="card-body">
+                    <div class="fw-semibold mb-2">임계치 이하</div>
+                    <ul id="lowStockList" class="list-group list-group-flush">
+                        <li class="list-group-item text-muted">로딩중...</li>
+                    </ul>
+
+                    <div class="fw-semibold mt-3 mb-2">품절</div>
+                    <ul id="soldOutList" class="list-group list-group-flush">
+                        <li class="list-group-item text-muted">로딩중...</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">바로가기</div>
+                <div class="card-body d-grid gap-2">
+                    <a class="btn btn-outline-primary" href="/admin/products?status=SOLD_OUT">품절 상품 보기</a>
+                    <a class="btn btn-outline-secondary" href="/admin/products">상품 목록</a>
+                    <a class="btn btn-outline-secondary" href="/admin/categories">카테고리 관리</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
-</body>
-</html>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script th:inline="javascript">
+    const IS_ADMIN = [[${isAdmin}]];
+</script>
+
+<script>
+    async function fetchJson(url) {
+        const r = await fetch(url, {headers: {"Accept": "application/json"}});
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return await r.json();
+    }
+
+    function kpiCard(title, value) {
+        return `
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="card">
+                <div class="card-body py-3">
+                    <div class="text-muted small">${title}</div>
+                    <div class="fs-4 fw-semibold">${value}</div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // actionType 뱃지 색: 운영에서 자주 보는 것 기준
+    function badgeClassForAction(actionType) {
+        if (!actionType) return "text-bg-secondary";
+        if (actionType.startsWith("LOGIN_FAIL")) return "text-bg-danger";
+        if (actionType.startsWith("LOGIN_SUCCESS")) return "text-bg-success";
+        if (actionType.startsWith("USER_")) return "text-bg-primary";
+        if (actionType.startsWith("PRODUCT_DELETED")) return "text-bg-danger";
+        if (actionType.startsWith("PRODUCT_")) return "text-bg-info";
+        return "text-bg-secondary";
+    }
+
+    function badgeClassForTarget(targetType) {
+        if (!targetType) return "text-bg-secondary";
+        switch (targetType) {
+            case "USER":
+                return "text-bg-primary";
+            case "AUTH":
+                return "text-bg-dark";
+            case "PRODUCT":
+                return "text-bg-info";
+            default:
+                return "text-bg-secondary";
+        }
+    }
+
+    function escapeHtml(s) {
+        if (s == null) return "";
+        return String(s)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("\"", "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    let dailyChart = null;
+    let topChart = null;
+
+    async function loadDashboard() {
+        const summary = await fetchJson("/admin/api/dashboard/summary");
+        const alerts = await fetchJson("/admin/api/dashboard/stock-alerts?threshold=5&limit=10");
+
+        document.getElementById("kpiRow").innerHTML =
+            kpiCard("전체 상품", summary.totalProducts) +
+            kpiCard("판매중", summary.activeProducts) +
+            kpiCard("판매중지", summary.hiddenProducts) +
+            kpiCard("품절", summary.soldOutProducts) +
+            kpiCard("삭제", summary.deletedProducts);
+
+        if (IS_ADMIN) {
+            const [daily, top, recent] = await Promise.all([
+                fetchJson("/admin/api/dashboard/audit-daily?days=7"),
+                fetchJson("/admin/api/dashboard/audit-top-actions?days=7&limit=8"),
+                fetchJson("/admin/api/dashboard/recent-audits?limit=20"),
+            ]);
+
+            console.log(daily);
+
+            // charts (destroy 후 생성)
+            if (dailyChart) dailyChart.destroy();
+            dailyChart = new Chart(document.getElementById("dailyChart"), {
+                type: "line",
+                data: {
+                    labels: daily.map(x => x.day),
+                    datasets: [{label: "events", data: daily.map(x => x.count)}]
+                },
+                options: {plugins: {legend: {display: false}}}
+            });
+
+            if (topChart) topChart.destroy();
+            topChart = new Chart(document.getElementById("topChart"), {
+                type: "bar",
+                data: {
+                    labels: top.map(x => x.actionType),
+                    datasets: [{label: "count", data: top.map(x => x.count)}]
+                },
+                options: {plugins: {legend: {display: false}}}
+            });
+
+            // recent table render
+            const tbody = document.getElementById("recentAuditsBody");
+            if (!recent || recent.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center">데이터 없음</td></tr>`;
+            } else {
+                tbody.innerHTML = recent.map(r => {
+                    const actionCls = badgeClassForAction(r.actionType);
+                    const targetCls = badgeClassForTarget(r.targetType);
+
+                    return `
+                    <tr>
+                        <td class="text-muted small">${escapeHtml(r.createdAt)}</td>
+                        <td>
+                            <span class="badge ${actionCls}">${escapeHtml(r.actionType)}</span>
+                        </td>
+                        <td>
+                            <span class="badge ${targetCls}">${escapeHtml(r.targetType)}</span>
+                        </td>
+                        <td>${r.targetId ?? "-"}</td>
+                        <td>${r.actorUserId ?? "익명"}</td>
+                        <td class="text-muted small">${escapeHtml(r.ip ?? "-")}</td>
+                    </tr>`;
+                }).join("");
+            }
+        }
+
+        // 재고: 임계치 이하
+        const lowList = document.getElementById("lowStockList");
+        const low = (alerts.lowStock && alerts.lowStock.length) ? alerts.lowStock : [];
+        lowList.innerHTML = low.length ? low.map(p => `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="/admin/products/${p.id}/edit" class="text-decoration-none">
+                    ${escapeHtml(p.name)}
+                </a>
+                <span class="badge text-bg-warning">${p.stock}</span>
+            </li>
+        `).join("") : `<li class="list-group-item text-muted">없음</li>`;
+
+        // 재고: 품절
+        const soList = document.getElementById("soldOutList");
+        const so = (alerts.soldOut && alerts.soldOut.length) ? alerts.soldOut : [];
+        soList.innerHTML = so.length ? so.map(p => `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="/admin/products/${p.id}/edit" class="text-decoration-none">
+                    ${escapeHtml(p.name)}
+                </a>
+                <span class="badge text-bg-secondary">SOLD_OUT</span>
+            </li>
+        `).join("") : `<li class="list-group-item text-muted">없음</li>`;
+    }
+
+    loadDashboard().catch(err => {
+        console.error(err);
+        document.getElementById("kpiRow").innerHTML =
+            `<div class="col-12"><div class="alert alert-danger mb-0">대시보드 로딩 실패</div></div>`;
+        // 재고 영역 로딩 메시지 제거
+        const low = document.getElementById("lowStockList");
+        if (low) low.innerHTML = `<li class="list-group-item text-muted">로딩 실패</li>`;
+        const so = document.getElementById("soldOutList");
+        if (so) so.innerHTML = `<li class="list-group-item text-muted">로딩 실패</li>`;
+    });
+</script>
