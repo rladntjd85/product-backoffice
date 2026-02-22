@@ -2,48 +2,90 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <body>
 <div th:fragment="content">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form method="post" th:object="${form}"
+                    th:action="${mode == 'EDIT'} ? @{|/admin/categories/${categoryId}/edit|} : @{/admin/categories}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
-    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small mb-1">상위 카테고리</label> <select class="form-select"
+                            th:field="*{parentId}">
+                        <option value="">없음 (1차 카테고리)</option>
+                        <option th:each="p : ${parents}" th:value="${p.id}" th:text="${p.name}">대분류</option>
+                    </select>
+                    </div>
 
-    <form method="post" th:object="${form}"
-            th:action="${mode == 'EDIT'} ? @{|/admin/categories/${categoryId}/rename|} : @{/admin/categories}"
-            class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small mb-1">카테고리명</label> <input type="text"
+                            class="form-control" th:field="*{name}" placeholder="예: 소시지" required>
+                    </div>
 
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <div class="col-12 mt-1">
+                        <small class="text-muted">하위 카테고리로 등록하려면 상위 항목을 선택하세요.</small>
+                    </div>
 
-        <div class="col-12 col-md-6">
-            <label class="form-label">카테고리명</label> <input class="form-control" th:field="*{name}" placeholder="예: 상의"
-                required>
+                    <div class="col-12 mt-4 pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary px-4" type="submit"
+                                        th:text="${mode == 'EDIT'} ? '변경 저장' : '등록 저장'"></button>
+                                <button type="button" class="btn btn-outline-secondary px-4"
+                                        onclick="location.href='/admin/categories'">취소
+                                </button>
+                            </div>
 
-            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                            <div class="d-flex gap-2" th:if="${mode == 'EDIT'}">
+                                <button type="button" class="btn btn-outline-warning" th:if="${enabled}"
+                                        th:onclick="|handleAction('disable', ${categoryId})|">비활성
+                                </button>
+
+                                <button type="button" class="btn btn-outline-success" th:if="${!enabled}"
+                                        th:onclick="|handleAction('enable', ${categoryId})|">활성화
+                                </button>
+
+                                <button type="button" class="btn btn-outline-danger"
+                                        th:onclick="|handleAction('delete', ${categoryId})|">삭제
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
-
-        <div class="col-12">
-            <button class="btn btn-primary" type="submit" th:text="${mode == 'EDIT'} ? '이름 변경' : '등록 저장'"></button>
-            <a class="btn btn-outline-secondary" href="/admin/categories">취소</a>
-        </div>
-    </form>
-
-    <div class="mt-3" th:if="${mode == 'EDIT'}">
-        <form class="d-inline" method="post" th:action="@{|/admin/categories/${categoryId}/disable|}"
-                onsubmit="return confirm('비활성 처리합니다. 진행할까요?');" th:if="${enabled}">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <button class="btn btn-outline-warning" type="submit">비활성</button>
-        </form>
-
-        <form class="d-inline" method="post" th:action="@{|/admin/categories/${categoryId}/enable|}"
-                th:if="${!enabled}">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <button class="btn btn-outline-primary" type="submit">활성</button>
-        </form>
-
-        <form class="d-inline" method="post" th:action="@{|/admin/categories/${categoryId}/delete|}"
-                onsubmit="return confirm('삭제합니다. 진행할까요? (상품이 있으면 삭제 불가)');">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <button class="btn btn-outline-danger" type="submit">삭제</button>
-        </form>
     </div>
-
 </div>
 </body>
 </html>
+<script th:inline="javascript">
+    function handleAction(action, id) {
+        const msg = action === 'delete' ? '정말 삭제하시겠습니까?' : '진행하시겠습니까?';
+        if (!confirm(msg)) return;
+
+        // CSRF 토큰 및 헤더 설정
+        const token = document.querySelector('input[name="_csrf"]').value;
+        const header = document.querySelector('input[name="_csrf_header"]')?.value || 'X-CSRF-TOKEN';
+
+        fetch(`/admin/categories/${id}/${action}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                [header]: token
+            }
+        })
+            .then(response => {
+                if (response.ok) {
+                    // 삭제 시 목록으로, 활성/비활성 시 현재 페이지 새로고침
+                    if (action === 'delete') {
+                        location.href = '/admin/categories';
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert('작업 처리 중 오류가 발생했습니다.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+</script>

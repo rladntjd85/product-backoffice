@@ -56,11 +56,17 @@ public class AdminProductPageController extends BaseAdminController {
         return render(model, "상품 목록", "admin/products/list");
     }
 
+    // 해당 컨트롤러의 모든 응답 모델에 "parentCategories"라는 이름으로 1차 카테고리 목록이 자동 포함됨
+    @ModelAttribute("parentCategories")
+    public List<Category> parentCategories() {
+        return categoryRepository.findByParentIdIsNull();
+    }
+
     @GetMapping("/new")
     public String createForm(Model model) {
         model.addAttribute("mode", "CREATE");
         model.addAttribute("form", ProductForm.empty());
-        model.addAttribute("categories", categoryRepository.findAll());
+
         return render(model, "상품 등록", "admin/products/form");
     }
 
@@ -78,7 +84,18 @@ public class AdminProductPageController extends BaseAdminController {
         model.addAttribute("mode", "EDIT");
         model.addAttribute("productId", id);
         model.addAttribute("form", form);
-        model.addAttribute("categories", categoryRepository.findAll());
+
+        // 수정 화면에서는 '현재 선택된 2차 카테고리'의 형제들(하위 목록)을 미리 보여줘야 하므로 별도 추가
+        if (p.getCategory() != null && p.getCategory().getParent() != null) {
+            Long parentId = p.getCategory().getParent().getId();
+            model.addAttribute("selectedParentId", parentId);
+            // 현재 1차 카테고리에 속한 모든 2차 목록을 가져와야 select 박스에 보임
+            model.addAttribute("childCategories", categoryRepository.findByParentId(parentId));
+        } else if (p.getCategory() != null) {
+            // 부모가 없는 1차 카테고리 자체가 선택된 경우
+            model.addAttribute("selectedParentId", p.getCategory().getId());
+            model.addAttribute("childCategories", List.of());
+        }
 
         model.addAttribute("currentThumbUrl", p.getThumbnailUrl());
         model.addAttribute("currentThumbOriginalName", p.getThumbnailOriginalName());
@@ -102,7 +119,7 @@ public class AdminProductPageController extends BaseAdminController {
         }
 
         try {
-            adminProductService.create(form, currentUserId(auth), clientIp(request), userAgent(request));
+            adminProductService.create(form);
             return "redirect:/admin/products";
         } catch (IllegalArgumentException | MultipartException e) {
             model.addAttribute("mode", "CREATE");
@@ -136,7 +153,7 @@ public class AdminProductPageController extends BaseAdminController {
         }
 
         try {
-            adminProductService.update(id, form, currentUserId(auth), clientIp(request), userAgent(request));
+            adminProductService.update(id, form);
             return "redirect:/admin/products";
         } catch (IllegalArgumentException | MultipartException e) {
             Product p = adminProductService.getWithCategory(id);
@@ -163,35 +180,35 @@ public class AdminProductPageController extends BaseAdminController {
     // 판매중지: ACTIVE -> HIDDEN
     @PostMapping("/{id}/hide")
     public String hide(@PathVariable Long id, Authentication auth, HttpServletRequest request) {
-        adminProductService.hide(id, currentUserId(auth), clientIp(request), userAgent(request));
+        adminProductService.hide(id);
         return "redirect:/admin/products";
     }
 
     // 판매재개: HIDDEN -> ACTIVE (stock==0이면 SOLD_OUT)
     @PostMapping("/{id}/unhide")
     public String unhide(@PathVariable Long id, Authentication auth, HttpServletRequest request) {
-        adminProductService.unhide(id, currentUserId(auth), clientIp(request), userAgent(request));
+        adminProductService.unhide(id);
         return "redirect:/admin/products";
     }
 
     // 삭제(상태): -> DELETED (파일은 유지)
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id, Authentication auth, HttpServletRequest request) {
-        adminProductService.softDelete(id, currentUserId(auth), clientIp(request), userAgent(request));
+        adminProductService.softDelete(id);
         return "redirect:/admin/products";
     }
 
     // 썸네일 제거(기본 이미지로)
     @PostMapping("/{id}/thumbnail/remove")
     public String removeThumbnail(@PathVariable Long id, Authentication auth, HttpServletRequest request) {
-        adminProductService.removeThumbnail(id, currentUserId(auth), clientIp(request), userAgent(request));
+        adminProductService.removeThumbnail(id);
         return "redirect:/admin/products/" + id + "/edit";
     }
 
     // 상세 제거(기본 이미지로)
     @PostMapping("/{id}/detail/remove")
     public String removeDetail(@PathVariable Long id, Authentication auth, HttpServletRequest request) {
-        adminProductService.removeDetailImage(id, currentUserId(auth), clientIp(request), userAgent(request));
+        adminProductService.removeDetailImage(id);
         return "redirect:/admin/products/" + id + "/edit";
     }
 }

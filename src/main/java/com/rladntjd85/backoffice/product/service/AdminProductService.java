@@ -1,6 +1,7 @@
 package com.rladntjd85.backoffice.product.service;
 
-import com.rladntjd85.backoffice.audit.service.AuditWriter;
+import com.rladntjd85.backoffice.audit.annotation.AuditLoggable;
+import com.rladntjd85.backoffice.audit.annotation.AuditTargetId;
 import com.rladntjd85.backoffice.category.domain.Category;
 import com.rladntjd85.backoffice.category.repository.CategoryRepository;
 import com.rladntjd85.backoffice.common.util.FileStorage;
@@ -14,8 +15,6 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -25,9 +24,6 @@ public class AdminProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final FileStorage fileStorage;
-
-    // 감사로그
-    private final AuditWriter auditWriter;
 
     @Transactional(readOnly = true)
     public Page<AdminProductRow> search(String q, Long categoryId, String status, String sort, int page, int size) {
@@ -56,34 +52,12 @@ public class AdminProductService {
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
     }
 
-    private record ProductSnap(
-            String name,
-            Long categoryId,
-            Integer price,
-            Integer stock,
-            String status,
-            String thumbnailUrl,
-            String detailImageUrl
-    ) {
-        static ProductSnap from(Product p) {
-            return new ProductSnap(
-                    p.getName(),
-                    p.getCategory() != null ? p.getCategory().getId() : null,
-                    p.getPrice(),
-                    p.getStock(),
-                    p.getStatus() != null ? p.getStatus().name() : null,
-                    p.getThumbnailUrl(),
-                    p.getDetailImageUrl()
-            );
-        }
-    }
-
-    private static boolean eq(Object a, Object b) {
-        return Objects.equals(a, b);
-    }
-
+    /**
+     * 상품 생성: AOP가 반환된 Long ID를 사용하여 생성 직후의 스냅샷을 기록합니다.
+     */
     @Transactional
-    public Long create(ProductForm form, Long actorUserId, String ip, String userAgent) {
+    @AuditLoggable(action = "PRODUCT_CREATED", targetType = "PRODUCT", entityClass = Product.class)
+    public Long create(ProductForm form) {
         Category category = categoryRepository.findById(form.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
 
@@ -93,8 +67,27 @@ public class AdminProductService {
 
         ProductStatus status = normalizeStatus(parseStatus(form.getStatus()), form.getStock());
 
-        var thumb = fileStorage.storeProductThumb(form.getThumbnailFile());
-        var detail = fileStorage.storeProductDetail(form.getDetailImageFile());
+        // 썸네일 처리
+        String thumbUrl = form.getThumbnailDirectUrl();
+        String thumbOrg = null;
+        if (form.getThumbnailFile() != null && !form.getThumbnailFile().isEmpty()) {
+            var thumb = fileStorage.storeProductThumb(form.getThumbnailFile());
+            if (thumb != null) {
+                thumbUrl = thumb.url();
+                thumbOrg = thumb.originalName();
+            }
+        }
+
+        // 상세 이미지 처리
+        String detailUrl = form.getDetailImageDirectUrl();
+        String detailOrg = null;
+        if (form.getDetailImageFile() != null && !form.getDetailImageFile().isEmpty()) {
+            var detail = fileStorage.storeProductDetail(form.getDetailImageFile());
+            if (detail != null) {
+                detailUrl = detail.url();
+                detailOrg = detail.originalName();
+            }
+        }
 
         Product p = Product.builder()
                 .name(form.getName())
@@ -102,34 +95,22 @@ public class AdminProductService {
                 .price(form.getPrice())
                 .stock(form.getStock())
                 .status(status)
-                .thumbnailUrl(thumb != null ? thumb.url() : null)
-                .thumbnailOriginalName(thumb != null ? thumb.originalName() : null)
-                .detailImageUrl(detail != null ? detail.url() : null)
-                .detailOriginalName(detail != null ? detail.originalName() : null)
+                .thumbnailUrl(thumbUrl)
+                .thumbnailOriginalName(thumbOrg)
+                .detailImageUrl(detailUrl)
+                .detailOriginalName(detailOrg)
                 .build();
 
         productRepository.save(p);
-
-        // 생성은 스냅샷 1건(원하면 changes로 바꿀 수 있음)
-        Map<String, Object> snapshot = new LinkedHashMap<>();
-        snapshot.put("name", p.getName());
-        snapshot.put("categoryId", p.getCategory() != null ? p.getCategory().getId() : null);
-        snapshot.put("price", p.getPrice());
-        snapshot.put("stock", p.getStock());
-        snapshot.put("status", p.getStatus() != null ? p.getStatus().name() : null);
-        snapshot.put("thumbnailUrl", p.getThumbnailUrl());
-        snapshot.put("detailImageUrl", p.getDetailImageUrl());
-
-        Map<String, Object> diff = new LinkedHashMap<>();
-        diff.put("snapshot", snapshot);
-
-        auditWriter.write(actorUserId, "PRODUCT_CREATED", "PRODUCT", p.getId(), ip, userAgent, diff);
-
-        return p.getId();
+        return p.getId(); // AOP가 이 값을 가로채서 CREATE 로그를 남깁니다.
     }
 
+    /**
+     * 상품 수정: AOP가 @AuditTargetId를 기반으로 전/후 데이터를 자동 비교합니다.
+     */
     @Transactional
-    public void update(Long id, ProductForm form, Long actorUserId, String ip, String userAgent) {
+    @AuditLoggable(action = "PRODUCT_UPDATED", targetType = "PRODUCT", entityClass = Product.class)
+    public void update(@AuditTargetId Long id, ProductForm form) {
         Product p = getWithCategory(id);
 
         if (p.getStatus() == ProductStatus.DELETED) {
@@ -143,182 +124,105 @@ public class AdminProductService {
             throw new IllegalArgumentException("비활성 카테고리로 변경할 수 없습니다.");
         }
 
-        ProductSnap before = ProductSnap.from(p);
-
+        // 기본 정보 업데이트
         ProductStatus status = normalizeStatus(parseStatus(form.getStatus()), form.getStock());
         p.updateBasic(form.getName(), form.getPrice(), form.getStock(), status, category);
 
-        // 이미지 교체 시: 기존 파일 삭제 + DB 갱신
-        var newThumb = fileStorage.storeProductThumb(form.getThumbnailFile());
-        if (newThumb != null) {
-            fileStorage.deleteByUrl(p.getThumbnailUrl());
-            p.updateImages(
-                    newThumb.url(), newThumb.originalName(),
-                    p.getDetailImageUrl(), p.getDetailOriginalName()
-            );
-        }
+        // 썸네일 교체
+        updateThumbnail(p, form);
 
-        var newDetail = fileStorage.storeProductDetail(form.getDetailImageFile());
-        if (newDetail != null) {
-            fileStorage.deleteByUrl(p.getDetailImageUrl());
-            p.updateImages(
-                    p.getThumbnailUrl(), p.getThumbnailOriginalName(),
-                    newDetail.url(), newDetail.originalName()
-            );
-        }
-
-        ProductSnap after = ProductSnap.from(p);
-
-        boolean anyChanged = false;
-
-        // 세부 이벤트(여러 건)
-        if (!eq(before.price, after.price)) {
-            anyChanged = true;
-            auditWriter.write(actorUserId, "PRODUCT_PRICE_CHANGED", "PRODUCT", id, ip, userAgent,
-                    AuditWriter.change("price", before.price, after.price));
-        }
-        if (!eq(before.stock, after.stock)) {
-            anyChanged = true;
-            auditWriter.write(actorUserId, "PRODUCT_STOCK_CHANGED", "PRODUCT", id, ip, userAgent,
-                    AuditWriter.change("stock", before.stock, after.stock));
-        }
-        if (!eq(before.status, after.status)) {
-            anyChanged = true;
-            auditWriter.write(actorUserId, "PRODUCT_STATUS_CHANGED", "PRODUCT", id, ip, userAgent,
-                    AuditWriter.change("status", before.status, after.status));
-        }
-        if (!eq(before.thumbnailUrl, after.thumbnailUrl)) {
-            anyChanged = true;
-            auditWriter.write(actorUserId, "PRODUCT_THUMB_CHANGED", "PRODUCT", id, ip, userAgent,
-                    AuditWriter.change("thumbnailUrl", before.thumbnailUrl, after.thumbnailUrl));
-        }
-        if (!eq(before.detailImageUrl, after.detailImageUrl)) {
-            anyChanged = true;
-            auditWriter.write(actorUserId, "PRODUCT_DETAIL_CHANGED", "PRODUCT", id, ip, userAgent,
-                    AuditWriter.change("detailImageUrl", before.detailImageUrl, after.detailImageUrl));
-        }
-
-        // 일반 수정(PRODUCT_UPDATED)도 남김(요구사항: 다 남김)
-        // changedFields 요약 형태(로그 용량/가독성 균형)
-        if (anyChanged || !eq(before.name, after.name) || !eq(before.categoryId, after.categoryId)) {
-            var changed = new java.util.ArrayList<String>();
-            if (!eq(before.name, after.name)) changed.add("name");
-            if (!eq(before.categoryId, after.categoryId)) changed.add("categoryId");
-            if (!eq(before.price, after.price)) changed.add("price");
-            if (!eq(before.stock, after.stock)) changed.add("stock");
-            if (!eq(before.status, after.status)) changed.add("status");
-            if (!eq(before.thumbnailUrl, after.thumbnailUrl)) changed.add("thumbnailUrl");
-            if (!eq(before.detailImageUrl, after.detailImageUrl)) changed.add("detailImageUrl");
-
-            Map<String, Object> diff = new LinkedHashMap<>();
-            diff.put("changedFields", changed);
-
-            auditWriter.write(actorUserId, "PRODUCT_UPDATED", "PRODUCT", id, ip, userAgent, diff);
-        }
+        // 상세 이미지 교체
+        updateDetailImage(p, form);
     }
 
     @Transactional
-    public void hide(Long id, Long actorUserId, String ip, String userAgent) {
-        Product p = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
-
-        if (p.getStatus() == ProductStatus.DELETED) {
-            throw new IllegalArgumentException("삭제된 상품은 변경할 수 없습니다.");
-        }
+    @AuditLoggable(action = "PRODUCT_STATUS_CHANGED", targetType = "PRODUCT", entityClass = Product.class)
+    public void hide(@AuditTargetId Long id) {
+        Product p = getWithCategory(id);
         if (p.getStatus() != ProductStatus.ACTIVE) {
             throw new IllegalArgumentException("판매중인 상품만 판매중지할 수 있습니다.");
         }
-
-        String before = p.getStatus().name();
         p.updateBasic(p.getName(), p.getPrice(), p.getStock(), ProductStatus.HIDDEN, p.getCategory());
-        String after = p.getStatus().name();
-
-        auditWriter.write(actorUserId, "PRODUCT_STATUS_CHANGED", "PRODUCT", id, ip, userAgent,
-                AuditWriter.change("status", before, after));
-
-        auditWriter.write(actorUserId, "PRODUCT_UPDATED", "PRODUCT", id, ip, userAgent,
-                Map.of("changedFields", java.util.List.of("status")));
     }
 
     @Transactional
-    public void unhide(Long id, Long actorUserId, String ip, String userAgent) {
-        Product p = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
-
-        if (p.getStatus() == ProductStatus.DELETED) {
-            throw new IllegalArgumentException("삭제된 상품은 변경할 수 없습니다.");
-        }
+    @AuditLoggable(action = "PRODUCT_STATUS_CHANGED", targetType = "PRODUCT", entityClass = Product.class)
+    public void unhide(@AuditTargetId Long id) {
+        Product p = getWithCategory(id);
         if (p.getStatus() != ProductStatus.HIDDEN) {
             throw new IllegalArgumentException("판매중지 상태에서만 판매재개할 수 있습니다.");
         }
-
-        String before = p.getStatus().name();
         ProductStatus next = normalizeStatus(ProductStatus.ACTIVE, p.getStock());
         p.updateBasic(p.getName(), p.getPrice(), p.getStock(), next, p.getCategory());
-        String after = p.getStatus().name();
-
-        auditWriter.write(actorUserId, "PRODUCT_STATUS_CHANGED", "PRODUCT", id, ip, userAgent,
-                AuditWriter.change("status", before, after));
-
-        auditWriter.write(actorUserId, "PRODUCT_UPDATED", "PRODUCT", id, ip, userAgent,
-                Map.of("changedFields", java.util.List.of("status")));
     }
 
     @Transactional
-    public void softDelete(Long id, Long actorUserId, String ip, String userAgent) {
+    @AuditLoggable(action = "PRODUCT_DELETED", targetType = "PRODUCT", entityClass = Product.class)
+    public void softDelete(@AuditTargetId Long id) {
         Product p = productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
         if (p.getStatus() == ProductStatus.DELETED) return;
-
-        String before = p.getStatus().name();
         p.softDelete();
-        String after = p.getStatus().name();
-
-        auditWriter.write(actorUserId, "PRODUCT_DELETED", "PRODUCT", id, ip, userAgent,
-                AuditWriter.change("status", before, after));
-
-        auditWriter.write(actorUserId, "PRODUCT_UPDATED", "PRODUCT", id, ip, userAgent,
-                Map.of("changedFields", java.util.List.of("status")));
     }
 
     @Transactional
-    public void removeThumbnail(Long id, Long actorUserId, String ip, String userAgent) {
-        Product p = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
-        if (p.getStatus() == ProductStatus.DELETED) {
-            throw new IllegalArgumentException("삭제된 상품은 변경할 수 없습니다.");
-        }
-
-        String beforeUrl = p.getThumbnailUrl();
-        fileStorage.deleteByUrl(beforeUrl);
+    @AuditLoggable(action = "PRODUCT_THUMB_REMOVED", targetType = "PRODUCT", entityClass = Product.class)
+    public void removeThumbnail(@AuditTargetId Long id) {
+        Product p = getWithCategory(id);
+        fileStorage.deleteByUrl(p.getThumbnailUrl());
         p.clearThumbnail();
-        String afterUrl = p.getThumbnailUrl(); // 보통 null
-
-        auditWriter.write(actorUserId, "PRODUCT_THUMB_REMOVED", "PRODUCT", id, ip, userAgent,
-                AuditWriter.change("thumbnailUrl", beforeUrl, afterUrl));
-
-        auditWriter.write(actorUserId, "PRODUCT_UPDATED", "PRODUCT", id, ip, userAgent,
-                Map.of("changedFields", java.util.List.of("thumbnailUrl")));
     }
 
     @Transactional
-    public void removeDetailImage(Long id, Long actorUserId, String ip, String userAgent) {
-        Product p = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
-        if (p.getStatus() == ProductStatus.DELETED) {
-            throw new IllegalArgumentException("삭제된 상품은 변경할 수 없습니다.");
-        }
-
-        String beforeUrl = p.getDetailImageUrl();
-        fileStorage.deleteByUrl(beforeUrl);
+    @AuditLoggable(action = "PRODUCT_DETAIL_REMOVED", targetType = "PRODUCT", entityClass = Product.class)
+    public void removeDetailImage(@AuditTargetId Long id) {
+        Product p = getWithCategory(id);
+        fileStorage.deleteByUrl(p.getDetailImageUrl());
         p.clearDetailImage();
-        String afterUrl = p.getDetailImageUrl(); // 보통 null
+    }
 
-        auditWriter.write(actorUserId, "PRODUCT_DETAIL_REMOVED", "PRODUCT", id, ip, userAgent,
-                AuditWriter.change("detailImageUrl", beforeUrl, afterUrl));
+    // --- 헬퍼 메서드들 ---
 
-        auditWriter.write(actorUserId, "PRODUCT_UPDATED", "PRODUCT", id, ip, userAgent,
-                Map.of("changedFields", java.util.List.of("detailImageUrl")));
+    private void updateThumbnail(Product p, ProductForm form) {
+        String newUrl = p.getThumbnailUrl();
+        String newOrg = p.getThumbnailOriginalName();
+
+        if (form.getThumbnailFile() != null && !form.getThumbnailFile().isEmpty()) {
+            var thumb = fileStorage.storeProductThumb(form.getThumbnailFile());
+            if (thumb != null) {
+                fileStorage.deleteByUrl(p.getThumbnailUrl());
+                newUrl = thumb.url();
+                newOrg = thumb.originalName();
+            }
+        } else if (form.getThumbnailDirectUrl() != null && !form.getThumbnailDirectUrl().isBlank()) {
+            if (!Objects.equals(p.getThumbnailUrl(), form.getThumbnailDirectUrl())) {
+                fileStorage.deleteByUrl(p.getThumbnailUrl());
+                newUrl = form.getThumbnailDirectUrl();
+                newOrg = null;
+            }
+        }
+        p.updateImages(newUrl, newOrg, p.getDetailImageUrl(), p.getDetailOriginalName());
+    }
+
+    private void updateDetailImage(Product p, ProductForm form) {
+        String newUrl = p.getDetailImageUrl();
+        String newOrg = p.getDetailOriginalName();
+
+        if (form.getDetailImageFile() != null && !form.getDetailImageFile().isEmpty()) {
+            var detail = fileStorage.storeProductDetail(form.getDetailImageFile());
+            if (detail != null) {
+                fileStorage.deleteByUrl(p.getDetailImageUrl());
+                newUrl = detail.url();
+                newOrg = detail.originalName();
+            }
+        } else if (form.getDetailImageDirectUrl() != null && !form.getDetailImageDirectUrl().isBlank()) {
+            if (!Objects.equals(p.getDetailImageUrl(), form.getDetailImageDirectUrl())) {
+                fileStorage.deleteByUrl(p.getDetailImageUrl());
+                newUrl = form.getDetailImageDirectUrl();
+                newOrg = null;
+            }
+        }
+        p.updateImages(p.getThumbnailUrl(), p.getThumbnailOriginalName(), newUrl, newOrg);
     }
 
     private ProductStatus parseStatus(String raw) {
@@ -329,9 +233,6 @@ public class AdminProductService {
         }
     }
 
-    // 정책:
-    // - stock==0 -> SOLD_OUT
-    // - stock>0 + requested==SOLD_OUT -> ACTIVE로 자동 복귀
     private ProductStatus normalizeStatus(ProductStatus requested, Integer stock) {
         int s = (stock == null) ? 0 : stock;
         if (s == 0) return ProductStatus.SOLD_OUT;

@@ -31,13 +31,25 @@
             <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
         </div>
 
-        <div class="col-12 col-md-4">
-            <label class="form-label">카테고리</label> <select class="form-select" th:field="*{categoryId}">
-            <option value="">선택</option>
-            <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
+        <div class="col-12 col-md-2">
+            <label class="form-label">1차 카테고리</label> <select class="form-select" id="parentCategory"
+                onchange="loadSubCategories(this.value)">
+            <option value="">대분류 선택</option>
+            <option th:each="c : ${parentCategories}" th:value="${c.id}" th:text="${c.name}"
+                    th:selected="${selectedParentId == c.id}"></option>
         </select>
-            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('categoryId')}"
-                    th:errors="*{categoryId}"></div>
+        </div>
+
+        <div class="col-12 col-md-2">
+            <label class="form-label">2차 카테고리</label>
+            <select class="form-select" th:field="*{categoryId}" id="childCategory" required>
+                <option value="">소분류 선택</option>
+                <option th:each="c : ${childCategories}"
+                        th:value="${c.id}"
+                        th:text="${c.name}"
+                        th:selected="${c.id == form.categoryId}">
+                </option>
+            </select>
         </div>
 
         <div class="col-12 col-md-4">
@@ -85,7 +97,8 @@
                 </div>
             </div>
 
-            <input class="form-control" type="file" name="thumbnailFile" accept="image/*">
+            <input class="form-control mb-1" type="file" name="thumbnailFile" accept="image/*">
+            <input class="form-control" type="text" th:field="*{thumbnailDirectUrl}" placeholder="또는 외부 이미지 URL 직접 입력 (예: http://...)">
             <div class="form-text">jpg/jpeg/png/webp, 최대 5MB</div>
         </div>
 
@@ -112,7 +125,8 @@
                 </div>
             </div>
 
-            <input class="form-control" type="file" name="detailImageFile" accept="image/*">
+            <input class="form-control mb-1" type="file" name="detailImageFile" accept="image/*">
+            <input class="form-control" type="text" th:field="*{detailImageDirectUrl}" placeholder="또는 외부 상세 이미지 URL 직접 입력">
             <div class="form-text">jpg/jpeg/png/webp, 최대 5MB</div>
         </div>
 
@@ -126,3 +140,37 @@
 </div>
 </body>
 </html>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        const parentSelect = document.getElementById('parentCategory');
+        const childSelect = document.getElementById('childCategory');
+
+        // 만약 1차는 선택되어 있는데 2차가 비어있다면 (서버에서 안 보냈을 경우 대비)
+        if (parentSelect.value && childSelect.options.length <= 1) {
+            const currentChildId = [[${form.categoryId}]]; // 현재 상품의 카테고리 ID
+            loadSubCategories(parentSelect.value, currentChildId);
+        }
+    });
+
+    // 기존 loadSubCategories 함수에 selectedId 파라미터 추가
+    function loadSubCategories(parentId, selectedId = null) {
+        const childSelect = document.getElementById('childCategory');
+        childSelect.innerHTML = '<option value="">소분류 선택</option>';
+
+        if (!parentId) return;
+
+        fetch(`/admin/api/categories/${parentId}/children`)
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c.id;
+                    option.textContent = c.name;
+                    if (selectedId && c.id == selectedId) {
+                        option.selected = true;
+                    }
+                    childSelect.appendChild(option);
+                });
+            });
+    }
+</script>

@@ -1,10 +1,9 @@
 package com.rladntjd85.backoffice.common.security.web;
 
 import com.rladntjd85.backoffice.auth.domain.Role;
+import com.rladntjd85.backoffice.auth.service.AuthAuditService;
 import com.rladntjd85.backoffice.user.domain.User;
 import com.rladntjd85.backoffice.user.repository.UserRepository;
-import com.rladntjd85.backoffice.auth.service.AuthAuditService;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,6 @@ public class AuditAuthenticationSuccessHandler implements AuthenticationSuccessH
 
     private final UserRepository userRepository;
     private final AuthAuditService authAuditService;
-    private final RequestMetaResolver requestMetaResolver;
 
     @Override
     public void onAuthenticationSuccess(
@@ -34,9 +32,7 @@ public class AuditAuthenticationSuccessHandler implements AuthenticationSuccessH
         User user = userRepository.findByEmail(email)
                 .orElseThrow();
 
-        var meta = requestMetaResolver.resolve(request);
-
-        authAuditService.onLoginSuccess(email, meta.ip(), meta.userAgent());
+        authAuditService.onLoginSuccess(email);
 
         if (user.isMustChangePassword()) {
             response.sendRedirect("/auth/password-change");

@@ -63,6 +63,7 @@ dependencies {
 
     /* === 로그 === */
     implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-hibernate6'
 
     /* === 테스트 === */
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

@@ -4,37 +4,65 @@
 <div th:fragment="content">
 
     <style>
+        /* 테이블 레이아웃 최적화 */
         .product-table {
-            table-layout: fixed;
+            width: 100%;
+            /* 모바일에서 겹침 방지를 위해 고정 레이아웃 해제 */
+            table-layout: auto !important;
         }
 
         .product-table th, .product-table td {
-            padding-left: .75rem;
-            padding-right: .75rem;
+            padding: 0.5rem;
+            vertical-align: middle;
         }
 
+        /* 상품명: 모바일에서 너비 확보 및 말줄임 처리 */
         .product-table .td-name {
+            min-width: 150px;
+            max-width: 0; /* flex 효과처럼 작동하여 남은 공간 차지 */
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        .product-table .td-stock {
-            min-width: 80px;
-        }
-
-        .product-table .td-status {
-            min-width: 120px;
-        }
-
+        /* 상태 배지 고정 폭 */
         .product-table .status-badge {
             display: inline-block;
-            min-width: 92px;
+            min-width: 80px;
             text-align: center;
         }
 
+        /* 관리 버튼 영역 */
         .product-table .td-actions {
             white-space: nowrap;
+        }
+
+        /* 모바일 대응 미디어 쿼리 */
+        @media (max-width: 768px) {
+            .product-table {
+                font-size: 0.8rem; /* 글자 크기 축소 */
+            }
+
+            /* 모바일에서 불필요한 열 숨기기 */
+            .hide-on-mobile {
+                display: none !important;
+            }
+
+            /* 썸네일 크기 축소 */
+            .img-thumbnail {
+                width: 40px !important;
+                height: 40px !important;
+            }
+
+            /* 관리 버튼 세로 정렬 또는 간격 축소 */
+            .td-actions .gap-1 {
+                gap: 2px !important;
+            }
+
+            .btn-sm {
+                padding: 0.2rem 0.4rem;
+                font-size: 0.7rem;
+            }
         }
     </style>
 
@@ -115,26 +143,15 @@
 
     <div class="table-responsive">
         <table class="table table-sm table-striped align-middle product-table">
-            <colgroup>
-                <col style="width:84px;">   <!-- 썸네일 -->
-                <col style="width:96px;">   <!-- 상품번호 -->
-                <col>                       <!-- 상품명 (가변) -->
-                <col style="width:160px;">  <!-- 카테고리 -->
-                <col style="width:120px;">  <!-- 가격 -->
-                <col style="width:90px;">   <!-- 재고 -->
-                <col style="width:130px;">  <!-- 상태 -->
-                <col style="width:240px;">  <!-- 관리 -->
-            </colgroup>
+            <colgroup class="d-none d-md-table-column-group">
+                <col style="width:70px;">   <col style="width:80px;">   <col>                       <col style="width:120px;">  <col style="width:100px;">  <col style="width:70px;">   <col style="width:100px;">  <col style="width:200px;">  </colgroup>
 
             <thead>
             <tr>
                 <th>썸네일</th>
-                <th>상품번호</th>
-                <th>상품명</th>
+                <th class="hide-on-mobile">상품번호</th> <th>상품명</th>
                 <th>카테고리</th>
-                <th class="text-end">가격</th>
-                <th class="text-end">재고</th>
-                <th class="text-center">상태</th>
+                <th class="text-end hide-on-mobile">가격</th> <th class="text-end hide-on-mobile">재고</th> <th class="text-center">상태</th>
                 <th class="text-end">관리</th>
             </tr>
             </thead>
@@ -143,88 +160,55 @@
             <tr th:each="p : ${result.content}" th:if="${p != null}"
                     th:classappend="${p.status == 'DELETED'} ? ' text-muted' : ''">
 
-                <!-- 썸네일 -->
                 <td>
                     <a th:if="${p.status != 'DELETED'}" th:href="@{|/admin/products/${p.id}/edit|}">
-                        <img class="img-thumbnail" loading="lazy" style="width:56px;height:56px;object-fit:cover;"
+                        <img class="img-thumbnail" loading="lazy" style="width:48px;height:48px;object-fit:cover;"
                                 th:src="${#strings.isEmpty(p.thumbnailUrl) ? '/img/no-image.svg' : p.thumbnailUrl}"
                                 alt="thumb">
                     </a>
-
                     <img th:if="${p.status == 'DELETED'}" class="img-thumbnail" loading="lazy"
-                            style="width:56px;height:56px;object-fit:cover;"
+                            style="width:48px;height:48px;object-fit:cover;"
                             th:src="${#strings.isEmpty(p.thumbnailUrl) ? '/img/no-image.svg' : p.thumbnailUrl}"
                             alt="thumb">
                 </td>
 
-                <!-- 상품번호 -->
-                <td th:text="${p.id}">1</td>
+                <td class="hide-on-mobile" th:text="${p.id}">1</td>
 
-                <!-- 상품명(말줄임 + title) -->
                 <td class="td-name">
                     <a th:href="@{|/admin/products/${p.id}/edit|}" th:text="${p.name}" th:if="${p.status != 'DELETED'}"
-                            th:title="${p.name}">
-                        상품명
-                    </a>
+                            th:title="${p.name}">상품명</a>
                     <span th:text="${p.name}" th:if="${p.status == 'DELETED'}" th:title="${p.name}">상품명</span>
                 </td>
 
-                <!-- 카테고리 -->
-                <td th:text="${p.categoryName}">카테고리</td>
-
-                <!-- 가격 -->
-                <td class="text-end" th:text="${#numbers.formatInteger(p.price, 0, 'COMMA')}">10,000</td>
-
-                <!-- 재고 -->
-                <td class="text-end td-stock" th:text="${p.stock}">50</td>
-
-                <!-- 상태(중앙정렬 + 배지 폭 고정) -->
-                <td class="text-center td-status">
-                    <span class="badge status-badge" th:classappend="
-                        ${p.status == 'ACTIVE'} ? ' text-bg-success' :
-                        (${p.status == 'HIDDEN'} ? ' text-bg-warning' :
-                        (${p.status == 'SOLD_OUT'} ? ' text-bg-info' :
-                        ' text-bg-secondary'))
-                      " th:text="${p.status}"> ACTIVE </span>
+                <td class="td-category">
+                    <span class="d-inline-block text-truncate" style="max-width: 80px;" th:text="${p.categoryName}" th:title="${p.categoryName}"></span>
                 </td>
 
-                <!-- 관리(버튼 정렬) -->
+                <td class="text-end hide-on-mobile" th:text="${#numbers.formatInteger(p.price, 0, 'COMMA')}">10,000</td>
+
+                <td class="text-end hide-on-mobile" th:text="${p.stock}">50</td>
+
+                <td class="text-center">
+                    <span class="badge status-badge" th:classappend="
+                    ${p.status == 'ACTIVE'} ? ' text-bg-success' :
+                    (${p.status == 'HIDDEN'} ? ' text-bg-warning' :
+                    (${p.status == 'SOLD_OUT'} ? ' text-bg-info' :
+                    ' text-bg-secondary'))
+                  " th:text="${p.status}"> ACTIVE </span>
+                </td>
+
                 <td class="text-end td-actions">
                     <div th:if="${p.status != 'DELETED'}" class="d-inline-flex gap-1 align-items-center">
-
                         <a class="btn btn-outline-secondary btn-sm" th:href="@{|/admin/products/${p.id}/edit|}">수정</a>
 
-                        <!-- ACTIVE일 때만 판매중지 -->
                         <form th:if="${p.status == 'ACTIVE'}" method="post"
-                                th:action="@{|/admin/products/${p.id}/hide|}" class="d-inline"
-                                onsubmit="return confirm('판매중지 처리합니다. 진행할까요?');">
+                                th:action="@{|/admin/products/${p.id}/hide|}" class="d-inline hide-on-mobile">
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                            <button class="btn btn-outline-warning btn-sm" type="submit">판매중지</button>
-                        </form>
-
-                        <!-- HIDDEN일 때만 판매재개 -->
-                        <form th:if="${p.status == 'HIDDEN'}" method="post"
-                                th:action="@{|/admin/products/${p.id}/unhide|}" class="d-inline"
-                                onsubmit="return confirm('판매재개 처리합니다. 진행할까요?');">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                            <button class="btn btn-outline-primary btn-sm" type="submit">판매재개</button>
-                        </form>
-
-                        <form method="post" th:if="${p.status != 'DELETED'}"
-                                th:action="@{|/admin/products/${p.id}/delete|}" class="d-inline"
-                                onsubmit="return confirm('삭제 처리합니다. 진행할까요?');">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                            <button class="btn btn-outline-danger btn-sm" type="submit">삭제</button>
+                            <button class="btn btn-outline-warning btn-sm" type="submit">중지</button>
                         </form>
                     </div>
-
                     <span class="text-muted" th:if="${p.status == 'DELETED'}">-</span>
                 </td>
-
-            </tr>
-
-            <tr th:if="${result.totalElements == 0}">
-                <td colspan="8" class="text-center text-muted">데이터가 없습니다.</td>
             </tr>
             </tbody>
         </table>

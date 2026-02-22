@@ -15,7 +15,6 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class AuditAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
-    private final RequestMetaResolver requestMetaResolver;
     private final AuthAuditService authAuditService;
 
     @Override
@@ -26,12 +25,8 @@ public class AuditAuthenticationFailureHandler implements AuthenticationFailureH
     ) throws IOException, ServletException {
 
         String email = request.getParameter("email");
-        var meta = requestMetaResolver.resolve(request);
-
         authAuditService.onLoginFailure(
                 email,
-                meta.ip(),
-                meta.userAgent(),
                 exception.getClass().getSimpleName()
         );
 

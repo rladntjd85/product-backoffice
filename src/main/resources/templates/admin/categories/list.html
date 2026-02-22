@@ -61,17 +61,24 @@
             </thead>
             <tbody>
             <tr th:each="c : ${result.content}" th:classappend="${!c.enabled} ? ' text-muted' : ''">
-                <td th:text="${c.name}">
-                    <a th:href="@{|/admin/categories/${c.id}/edit|}" th:text="${c.name}">상의
+                <td>
+                    <span th:if="${c.parent != null}" class="ms-4 text-secondary">
+                        <i class="bi bi-arrow-return-right me-1"></i> └
+                    </span>
+
+                    <a th:href="@{|/admin/categories/${c.id}/edit|}"
+                            th:text="${c.name}"
+                            th:classappend="${c.parent == null} ? 'fw-bold' : ''">
+                        카테고리명
                     </a>
                 </td>
                 <td>
-                    <span class="badge" th:classappend="${c.enabled} ? ' text-bg-success' : ' text-bg-secondary'"
+                    <span class="badge"
+                            th:classappend="${c.enabled} ? ' text-bg-success' : ' text-bg-secondary'"
                             th:text="${c.enabled} ? '사용중' : '비활성'">사용중</span>
                 </td>
                 <td class="text-end">
-                    <a class="btn btn-outline-secondary btn-sm" th:href="@{|/admin/categories/${c.id}/edit|}">수정
-                    </a>
+                    <a class="btn btn-outline-secondary btn-sm" th:href="@{|/admin/categories/${c.id}/edit|}">수정</a>
                 </td>
             </tr>
 

@@ -85,22 +85,10 @@ public class AdminUserPageController extends BaseAdminController {
     @PostMapping("/{id}/role")
     public String changeRole(@PathVariable Long id,
                              @RequestParam("role") String role,
-                             RedirectAttributes ra,
-                             jakarta.servlet.http.HttpServletRequest request,
-                             org.springframework.security.core.Authentication authentication) {
+                             RedirectAttributes ra) {
 
         try {
-            // actorId 구하기(세션 로그인은 email만 있으니 email로 조회)
-            Long actorId = userRepository.findByEmail(authentication.getName())
-                    .map(u -> u.getId())
-                    .orElse(null);
-
-            adminUserService.changeRole(
-                    id, role,
-                    actorId,
-                    request.getRemoteAddr(),
-                    request.getHeader("User-Agent")
-            );
+            adminUserService.changeRole(id, role);
 
             ra.addFlashAttribute("msg", "권한이 변경되었습니다.");
         } catch (Exception e) {
@@ -139,21 +127,9 @@ public class AdminUserPageController extends BaseAdminController {
     }
 
     @PostMapping("/{id}/reset-password")
-    public String resetPassword(@PathVariable Long id,
-                                RedirectAttributes ra,
-                                jakarta.servlet.http.HttpServletRequest request,
-                                org.springframework.security.core.Authentication authentication) {
+    public String resetPassword(@PathVariable Long id, RedirectAttributes ra) {
 
-        Long actorId = userRepository.findByEmail(authentication.getName())
-                .map(u -> u.getId())
-                .orElse(null);
-
-        var result = adminUserService.resetPassword(
-                id,
-                actorId,
-                request.getRemoteAddr(),
-                request.getHeader("User-Agent")
-        );
+        var result = adminUserService.resetPassword(id);
 
         ra.addFlashAttribute("resetResult", result);
         return "redirect:/admin/users/" + id + "/reset-password/result";

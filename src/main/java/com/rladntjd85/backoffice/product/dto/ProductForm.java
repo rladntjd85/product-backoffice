@@ -36,6 +36,8 @@ public class ProductForm {
     // 업로드 파일(선택)
     private MultipartFile thumbnailFile;
     private MultipartFile detailImageFile;
+    private String thumbnailDirectUrl;
+    private String detailImageDirectUrl;
 
     public static ProductForm empty() {
         ProductForm f = new ProductForm();
