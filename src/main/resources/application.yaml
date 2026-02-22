@@ -33,7 +33,7 @@ spring:
 security:
   jwt:
     # 에러 로그에 찍힌 이름인 'security.jwt.secret'을 정확히 맞춥니다.
-    secret: ${SECURITY_JWT_SECRET:this-is-a-very-long-secret-key-at-least-32-bytes!!}
+    secret: ${SECURITY_JWT_SECRET}
     expiration: 86400000 # 24시간
 
 ---
