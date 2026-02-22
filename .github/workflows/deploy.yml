@@ -62,6 +62,7 @@ jobs:
             DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
             SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}
             SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+            JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
             EOF
             
             # 3. 컨테이너 실행 (기존 컨테이너 삭제 후 재생성)

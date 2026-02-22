@@ -1,4 +1,4 @@
-# 공통 설정 및 로컬 환경
+# [공통 설정] - 모든 환경에서 적용됨
 app:
   upload:
     root-dir: /upload
@@ -16,7 +16,7 @@ spring:
       resolve-lazily: true
 
   profiles:
-    active: local # 기본 프로필은 로컬로 설정
+    active: local # 기본값은 로컬
 
   jpa:
     open-in-view: false
@@ -27,16 +27,21 @@ spring:
         format_sql: true
 
   thymeleaf:
-    cache: false # 로컬 개발 시에는 캐시 끔
+    cache: false
+
+# JWT 설정 (공통) - 이 부분이 누락되어 502 에러가 발생했었습니다.
+jwt:
+  # 환경변수가 없으면 뒤의 기본값을 사용 (32자 이상 필수)
+  secret: ${JWT_SECRET_KEY:thisisadefaultsecretkeyatleast32characterslong}
+  expiration: 86400000 # 24시간
 
 ---
-# 서버(EC2/배포) 환경 설정
+# [서버 환경] - prod 프로필이 활성화될 때 적용됨
 spring:
   config:
     activate:
       on-profile: prod
-  
-  # GitHub Secrets와 .env를 통해 주입받는 환경변수
+
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: pbuser
@@ -52,7 +57,7 @@ spring:
         format_sql: false
 
   thymeleaf:
-    cache: true # 서버 성능을 위해 캐시 활성화
+    cache: true
 
 logging:
   level:
