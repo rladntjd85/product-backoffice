@@ -57,15 +57,18 @@ jobs:
             # 1. 최신 이미지 다운로드
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/backoffice
             
-            # 2. .env 파일 생성 (Secrets 주입)
+            # 2. .env 파일 생성 (MYSQL_ROOT_PASSWORD 추가됨)
             cat <<EOF > .env
             DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
             SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}
             SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}
             SECURITY_JWT_SECRET=${{ secrets.SECURITY_JWT_SECRET }}
+            MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
             EOF
             
             # 3. 컨테이너 실행 (기존 컨테이너 삭제 후 재생성)
+            # --env-file 옵션을 통해 명시적으로 .env를 읽어옵니다.
+            sudo docker compose --env-file .env down
             sudo docker compose --env-file .env up -d --force-recreate
             
             # 4. 사용하지 않는 찌꺼기 이미지 삭제
