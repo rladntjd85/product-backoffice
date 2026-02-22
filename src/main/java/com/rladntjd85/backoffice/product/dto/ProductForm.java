@@ -32,6 +32,7 @@ public class ProductForm {
      */
     @NotBlank(message = "상태를 선택하세요.")
     private String status;
+    private String content;
 
     // 업로드 파일(선택)
     private MultipartFile thumbnailFile;

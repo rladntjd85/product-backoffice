@@ -1,40 +1,60 @@
+# 공통 설정 및 로컬 환경
 app:
   upload:
-    root-dir: ./upload
+    root-dir: /upload
 
 server:
   tomcat:
-    max-http-form-post-size: 10MB
-    max-swallow-size: 10MB
+    max-http-form-post-size: 2MB
+    max-swallow-size: 2MB
 
 spring:
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+      max-file-size: 1MB
+      max-request-size: 1MB
       resolve-lazily: true
 
   profiles:
-    active: local
+    active: local # 기본 프로필은 로컬로 설정
 
   jpa:
     open-in-view: false
+    hibernate:
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
-        show_sql: false
 
   thymeleaf:
-    cache: false # 타임리프 캐시 비활성화 (정상)
+    cache: false # 로컬 개발 시에는 캐시 끔
 
-  devtools: # 위치를 spring 바로 아래로 변경
-    livereload:
-      enabled: true
-    restart:
-      enabled: true # 코드 변경 시 서버 자동 재시작 (선택)
+---
+# 서버(EC2/배포) 환경 설정
+spring:
+  config:
+    activate:
+      on-profile: prod
+  
+  # GitHub Secrets와 .env를 통해 주입받는 환경변수
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: root
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: false
+
+  thymeleaf:
+    cache: true # 서버 성능을 위해 캐시 활성화
 
 logging:
   level:
-    org.hibernate.SQL: debug
-    org.hibernate.orm.jdbc.bind: trace
-    org.springframework.security: DEBUG
+    root: info
+    org.hibernate.SQL: info

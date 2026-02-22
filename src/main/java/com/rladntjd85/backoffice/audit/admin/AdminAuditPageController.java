@@ -53,12 +53,6 @@ public class AdminAuditPageController extends BaseAdminController {
                 page, 20
         );
 
-        log.info("result size={}", result.getContent().size());
-
-        if (!result.getContent().isEmpty()) {
-            log.info("first data={}", result.getContent().get(0));
-        }
-
         model.addAttribute("result", result);
         model.addAttribute("action", action);
         model.addAttribute("targetType", targetType);

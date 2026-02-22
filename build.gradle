@@ -26,6 +26,9 @@ repositories {
 
 dependencies {
 
+    // HTML 파싱을 위한 Jsoup
+    implementation 'org.jsoup:jsoup:1.17.2'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -74,3 +77,7 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+tasks.named('jar') {
+    enabled = false
+}
+

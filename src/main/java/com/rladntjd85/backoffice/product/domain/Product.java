@@ -34,6 +34,10 @@ public class Product extends BaseTimeEntity {
     @Column(nullable = false, length = 10)
     private ProductStatus status;
 
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String content;
+
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
 
@@ -46,12 +50,13 @@ public class Product extends BaseTimeEntity {
     @Column(name = "detail_original_name", length = 255)
     private String detailOriginalName;
 
-    public void updateBasic(String name, int price, int stock, ProductStatus status, Category category) {
+    public void updateBasic(String name, int price, int stock, ProductStatus status, Category category, String content) {
         this.name = name;
         this.price = price;
         this.stock = stock;
         this.status = status;
         this.category = category;
+        this.content = content;
     }
 
     public void updateImages(String thumbUrl, String thumbOrg, String detailUrl, String detailOrg) {

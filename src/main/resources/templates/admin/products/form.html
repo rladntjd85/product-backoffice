@@ -41,15 +41,12 @@
         </div>
 
         <div class="col-12 col-md-2">
-            <label class="form-label">2차 카테고리</label>
-            <select class="form-select" th:field="*{categoryId}" id="childCategory" required>
-                <option value="">소분류 선택</option>
-                <option th:each="c : ${childCategories}"
-                        th:value="${c.id}"
-                        th:text="${c.name}"
-                        th:selected="${c.id == form.categoryId}">
-                </option>
-            </select>
+            <label class="form-label">2차 카테고리</label> <select class="form-select" th:field="*{categoryId}"
+                id="childCategory" required>
+            <option value="">소분류 선택</option>
+            <option th:each="c : ${childCategories}" th:value="${c.id}" th:text="${c.name}"
+                    th:selected="${c.id == form.categoryId}"></option>
+        </select>
         </div>
 
         <div class="col-12 col-md-4">
@@ -72,6 +69,11 @@
             <option value="SOLD_OUT">품절(선택해도 재고&gt;0이면 판매중으로 처리)</option>
         </select>
             <div class="text-danger small mt-1" th:if="${#fields.hasErrors('status')}" th:errors="*{status}"></div>
+        </div>
+
+        <div class="col-12">
+            <label class="form-label">상품 상세 설명 (에디터)</label> <textarea id="summernote" th:field="*{content}"></textarea>
+            <div class="form-text">이미지를 드래그 앤 드롭하여 본문에 삽입할 수 있습니다.</div>
         </div>
 
         <!-- 썸네일 -->
@@ -97,8 +99,9 @@
                 </div>
             </div>
 
-            <input class="form-control mb-1" type="file" name="thumbnailFile" accept="image/*">
-            <input class="form-control" type="text" th:field="*{thumbnailDirectUrl}" placeholder="또는 외부 이미지 URL 직접 입력 (예: http://...)">
+            <input class="form-control mb-1" type="file" name="thumbnailFile" accept="image/*"> <input
+                class="form-control" type="text" th:field="*{thumbnailDirectUrl}"
+                placeholder="또는 외부 이미지 URL 직접 입력 (예: http://...)">
             <div class="form-text">jpg/jpeg/png/webp, 최대 5MB</div>
         </div>
 
@@ -125,8 +128,9 @@
                 </div>
             </div>
 
-            <input class="form-control mb-1" type="file" name="detailImageFile" accept="image/*">
-            <input class="form-control" type="text" th:field="*{detailImageDirectUrl}" placeholder="또는 외부 상세 이미지 URL 직접 입력">
+            <input class="form-control mb-1" type="file" name="detailImageFile" accept="image/*"> <input
+                class="form-control" type="text" th:field="*{detailImageDirectUrl}"
+                placeholder="또는 외부 상세 이미지 URL 직접 입력">
             <div class="form-text">jpg/jpeg/png/webp, 최대 5MB</div>
         </div>
 
@@ -134,14 +138,53 @@
             <button class="btn btn-primary" type="submit" th:text="${mode == 'EDIT'} ? '수정 저장' : '등록 저장'">등록 저장</button>
             <a class="btn btn-outline-secondary" href="/admin/products">취소</a>
         </div>
-
     </form>
-
 </div>
 </body>
 </html>
 <script th:inline="javascript">
-    document.addEventListener('DOMContentLoaded', function() {
+    $(document).ready(function () {
+        const csrfToken = [[${_csrf.token}]];
+        const csrfHeader = [[${_csrf.headerName}]];
+
+        $('#summernote').summernote({
+            height: 400,
+            lang: 'ko-KR',
+            placeholder: '상품 상세 내용을 입력하세요.',
+            callbacks: {
+                onImageUpload: function (files) {
+                    for (let i = 0; i < files.length; i++) {
+                        uploadImage(files[i], this, csrfToken, csrfHeader);
+                    }
+                },
+            }
+        });
+    });
+
+    function uploadImage(file, el, token, header) {
+        let formData = new FormData();
+        formData.append('file', file);
+
+        $.ajax({
+            data: formData,
+            type: "POST",
+            url: "/admin/api/image/upload",
+            cache: false,
+            contentType: false,
+            processData: false,
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader(header, token); // CSRF 헤더 추가
+            },
+            success: function (url) {
+                $(el).summernote('insertImage', url);
+            },
+            error: function () {
+                alert("이미지 업로드 실패");
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
         const parentSelect = document.getElementById('parentCategory');
         const childSelect = document.getElementById('childCategory');
 
@@ -160,17 +203,27 @@
         if (!parentId) return;
 
         fetch(`/admin/api/categories/${parentId}/children`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    // 403 에러 등이 발생하면 여기서 가로챕니다.
+                    throw new Error('API 호출 권한이 없거나 에러가 발생했습니다.');
+                }
+                return res.json();
+            })
             .then(data => {
-                data.forEach(c => {
-                    const option = document.createElement('option');
-                    option.value = c.id;
-                    option.textContent = c.name;
-                    if (selectedId && c.id == selectedId) {
-                        option.selected = true;
-                    }
-                    childSelect.appendChild(option);
-                });
-            });
+                // data가 배열인지 확인 후 실행
+                if (Array.isArray(data)) {
+                    data.forEach(c => {
+                        const option = document.createElement('option');
+                        option.value = c.id;
+                        option.textContent = c.name;
+                        if (selectedId && c.id == selectedId) {
+                            option.selected = true;
+                        }
+                        childSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(err => console.error('Error:', err));
     }
 </script>

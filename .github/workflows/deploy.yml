@@ -1,0 +1,71 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ "main" ] # main 브랜치에 푸시될 때 실행
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # 빌드는 메모리가 넉넉한 깃허브 서버에서 수행
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Build with Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew clean build -x test
+
+      - name: Login to DockerHub
+        uses: docker-login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/backoffice .
+          docker push ${{ secrets.DOCKER_USERNAME }}/backoffice
+
+      - name: Copy config files to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml,nginx.conf"
+          target: "/home/ubuntu/compose"
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            mkdir -p /home/ubuntu/compose
+            cd /home/ubuntu/compose
+            
+            # 1. 최신 이미지 다운로드
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/backoffice
+            
+            # 2. .env 파일 생성 (Secrets 주입)
+            cat <<EOF > .env
+            DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
+            SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}
+            SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+            EOF
+            
+            # 3. 컨테이너 실행 (기존 컨테이너 삭제 후 재생성)
+            sudo docker compose --env-file .env up -d --force-recreate
+            
+            # 4. 사용하지 않는 찌꺼기 이미지 삭제
+            sudo docker image prune -f

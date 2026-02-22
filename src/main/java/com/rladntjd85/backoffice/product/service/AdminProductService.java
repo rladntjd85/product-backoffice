@@ -11,11 +11,18 @@ import com.rladntjd85.backoffice.product.dto.AdminProductRow;
 import com.rladntjd85.backoffice.product.dto.ProductForm;
 import com.rladntjd85.backoffice.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -95,6 +102,7 @@ public class AdminProductService {
                 .price(form.getPrice())
                 .stock(form.getStock())
                 .status(status)
+                .content(form.getContent())
                 .thumbnailUrl(thumbUrl)
                 .thumbnailOriginalName(thumbOrg)
                 .detailImageUrl(detailUrl)
@@ -113,6 +121,21 @@ public class AdminProductService {
     public void update(@AuditTargetId Long id, ProductForm form) {
         Product p = getWithCategory(id);
 
+        // 1. 기존 본문(HTML)에서 이미지 URL 추출
+        List<String> oldImages = extractImageUrls(p.getContent());
+
+        // 2. 새 본문(HTML)에서 이미지 URL 추출
+        List<String> newImages = extractImageUrls(form.getContent());
+
+        // 3. 삭제 대상 찾기 (기존에는 있었는데 새 본문에는 없는 URL)
+        List<String> imagesToDelete = oldImages.stream()
+                .filter(url -> !newImages.contains(url))
+                .filter(url -> url.startsWith("/uploads")) // 외부 URL 제외
+                .toList();
+
+        // 4. 실제 파일 삭제
+        imagesToDelete.forEach(fileStorage::deleteByUrl);
+
         if (p.getStatus() == ProductStatus.DELETED) {
             throw new IllegalArgumentException("삭제된 상품은 수정할 수 없습니다.");
         }
@@ -126,7 +149,7 @@ public class AdminProductService {
 
         // 기본 정보 업데이트
         ProductStatus status = normalizeStatus(parseStatus(form.getStatus()), form.getStock());
-        p.updateBasic(form.getName(), form.getPrice(), form.getStock(), status, category);
+        p.updateBasic(form.getName(), form.getPrice(), form.getStock(), status, category, form.getContent());
 
         // 썸네일 교체
         updateThumbnail(p, form);
@@ -142,7 +165,7 @@ public class AdminProductService {
         if (p.getStatus() != ProductStatus.ACTIVE) {
             throw new IllegalArgumentException("판매중인 상품만 판매중지할 수 있습니다.");
         }
-        p.updateBasic(p.getName(), p.getPrice(), p.getStock(), ProductStatus.HIDDEN, p.getCategory());
+        p.updateBasic(p.getName(), p.getPrice(), p.getStock(), ProductStatus.HIDDEN, p.getCategory(), p.getContent());
     }
 
     @Transactional
@@ -153,7 +176,7 @@ public class AdminProductService {
             throw new IllegalArgumentException("판매중지 상태에서만 판매재개할 수 있습니다.");
         }
         ProductStatus next = normalizeStatus(ProductStatus.ACTIVE, p.getStock());
-        p.updateBasic(p.getName(), p.getPrice(), p.getStock(), next, p.getCategory());
+        p.updateBasic(p.getName(), p.getPrice(), p.getStock(), next, p.getCategory(), p.getContent());
     }
 
     @Transactional
@@ -241,5 +264,18 @@ public class AdminProductService {
             throw new IllegalArgumentException("DELETED 상태로 변경할 수 없습니다.");
         }
         return requested;
+    }
+    /**
+     * 정규표현식을 사용하여 HTML 태그 내 src 경로를 모두 추출
+     */
+    private List<String> extractImageUrls(String html) {
+        if (html == null || html.isBlank()) return List.of();
+        List<String> urls = new ArrayList<>();
+        Pattern pattern = Pattern.compile("<img[^>]*src=[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(html);
+        while (matcher.find()) {
+            urls.add(matcher.group(1));
+        }
+        return urls;
     }
 }

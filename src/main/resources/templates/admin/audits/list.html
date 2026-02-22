@@ -82,8 +82,8 @@
             </tr>
             </thead>
             <tbody>
-            <tr th:each="log : ${result.content}">
-                <td th:text="${log.id}"></td>
+            <tr th:each="log, loop : ${result.content}">
+                <td th:text="${result.totalElements - (result.number * result.size) - loop.index}"></td>
 
                 <td th:text="${#temporals.format(log.createdAt,'yyyy-MM-dd HH:mm:ss')}"></td>
 

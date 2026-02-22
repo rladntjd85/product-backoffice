@@ -31,7 +31,6 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
                       and (:actorEmail is null or :actorEmail = '' or lower(u.email) like lower(concat('%', :actorEmail, '%')))
                       and (:fromDt is null or a.createdAt >= :fromDt)
                       and (:toDtExclusive is null or a.createdAt < :toDtExclusive)
-                    order by a.createdAt desc
                     """,
             countQuery = """
                     select count(a.id)

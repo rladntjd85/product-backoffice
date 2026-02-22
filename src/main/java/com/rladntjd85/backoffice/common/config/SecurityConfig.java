@@ -77,6 +77,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin", "/admin").hasAnyRole("ADMIN", "MD")
                         .requestMatchers("/admin/products/**").hasAnyRole("ADMIN", "MD")
                         .requestMatchers("/admin/categories/**").hasAnyRole("ADMIN", "MD")
+
                         .requestMatchers("/admin/users/**").hasRole("ADMIN") // 사용자 운영은 ADMIN만
                         .requestMatchers("/admin/audit/**").hasRole("ADMIN") // 사용자 운영은 ADMIN만
 
@@ -87,6 +88,11 @@ public class SecurityConfig {
                         // 감사 관련은 ADMIN만
                         .requestMatchers("/admin/api/dashboard/audit/**").hasRole("ADMIN")
                         .requestMatchers("/admin/api/dashboard/recent-audits").hasRole("ADMIN")
+
+                        // 추가: 카테고리 조회 API도 MD에게 허용
+                        .requestMatchers("/admin/api/categories/**").hasAnyRole("ADMIN", "MD")
+                        // 추가: 상품 등록 시 이미지 업로드 API도 MD에게 허용 (Summernote용)
+                        .requestMatchers("/admin/api/image/**").hasAnyRole("ADMIN", "MD")
                         // /admin 대시보드는 ADMIN만
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 

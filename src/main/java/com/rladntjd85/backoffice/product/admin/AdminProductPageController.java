@@ -80,6 +80,7 @@ public class AdminProductPageController extends BaseAdminController {
         form.setPrice(p.getPrice());
         form.setStock(p.getStock());
         form.setStatus(p.getStatus().name());
+        form.setContent(p.getContent());
 
         model.addAttribute("mode", "EDIT");
         model.addAttribute("productId", id);
@@ -101,6 +102,7 @@ public class AdminProductPageController extends BaseAdminController {
         model.addAttribute("currentThumbOriginalName", p.getThumbnailOriginalName());
         model.addAttribute("currentDetailUrl", p.getDetailImageUrl());
         model.addAttribute("currentDetailOriginalName", p.getDetailOriginalName());
+        model.addAttribute("content", p.getContent());
 
         return render(model, "상품 수정", "admin/products/form");
     }
