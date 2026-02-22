@@ -39,7 +39,7 @@ spring:
   # GitHub Secrets와 .env를 통해 주입받는 환경변수
   datasource:
     url: ${SPRING_DATASOURCE_URL}
-    username: root
+    username: pbuser
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
