@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/SpringSecurity-Auth-6DB33F?logo=springsecurity" />
   <img src="https://img.shields.io/badge/JPA-Hibernate-orange" />
   <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql" />
-  <img src="https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker" />
+  <img src="https://img.shields.io/badge/Docker-2496ED?logo=docker" />
   <img src="https://img.shields.io/badge/AWS-EC2-FF9900?logo=amazonaws" />
   <img src="https://img.shields.io/badge/Nginx-009639?logo=nginx" />
   <img src="https://img.shields.io/badge/Cloudflare-F38020?logo=cloudflare" />
@@ -18,67 +18,73 @@
   단순 기능 구현을 넘어, <b>감사 로그 추적·상태 정책·권한 분리·배포 자동화 및 보안 인프라 구축</b>까지 실무 지향적으로 설계한 프로젝트입니다.
 </p>
 
-<p align="center">
-  <b>개발 기간:</b> 2026.01.28 ~ 2026.02.23
-</p>
+<hr/>
 
-<div align="center">
-  <h3>🔗 Live Demo</h3>
-  <a href="https://shop.rladntjd85.site">Commerce 운영 관리 시스템 바로가기</a><br/>
-  <sub>* 관련 프로젝트 (ERP/MES): <a href="https://rladntjd85.site">https://rladntjd85.site</a></sub>
-</div>
+<h2>1. 프로젝트 개요</h2>
+
+<ul>
+  <li><b>개발 기간:</b> 2026.01.28 ~ 2026.02.23</li>
+  <li><b>Live Demo:</b> <a href="https://shop.rladntjd85.site">Commerce 운영 관리 시스템 바로가기</a></li>
+  <li><b>테스트 계정 (ADMIN):</b> admin@metree.co.kr / MetreeMaster123! (전체 권한)</li>
+  <li><b>테스트 계정 (MD):</b> md_lee@metree.co.kr / MetreeMaster123! (상품/카테고리 실무)</li>
+</ul>
 
 <hr/>
 
-## 1. 프로젝트 목적 및 설계 철학
-운영 시스템에서 가장 중요한 것은 **데이터 무결성과 변경 추적 가능성**입니다.
+<h2>2. 아키텍처 및 기술 스택</h2>
 
-- **감사 로그(Audit) 체계**: 누가, 무엇을, 언제 변경했는지 완벽하게 추적
-- **상태-재고 정책**: 재고 불일치 방지를 위한 엄격한 비즈니스 로직 적용
-- **권한 분리**: ADMIN과 MD의 기능 및 UI 접근 권한 완벽 격리
-- **인프라 자동화**: 도커(Docker) 기반 격리 환경 및 CI/CD 자동화 배포 완료
-
-<hr/>
-
-## 2. 아키텍처 및 인프라
-GitHub Actions와 AWS EC2를 활용한 무중단 배포(CI/CD) 파이프라인을 구축하였으며, Nginx와 Cloudflare를 연동하여 보안성과 가용성을 확보했습니다.
-
-- **Client:** Admin / MD (Thymeleaf, Bootstrap 5)
-- **Application:** Spring Boot 3.x, Spring Security
-- **Database:** MySQL 8.0, Spring Data JPA
-- **Infra & DevOps:** Docker, AWS EC2, GitHub Actions, Nginx, Cloudflare
+<ul>
+  <li><b>Backend:</b> Java 21, Spring Boot 3.x, Spring Data JPA</li>
+  <li><b>Security:</b> Spring Security (RBAC 기반 권한 제어)</li>
+  <li><b>Database:</b> MySQL 8.0</li>
+  <li><b>Infra & DevOps:</b> AWS EC2, Docker, Nginx, Cloudflare, GitHub Actions</li>
+</ul>
 
 <hr/>
 
-## 3. 핵심 구현 및 설계 역량
+<h2>3. 핵심 구현 및 설계 역량</h2>
 
-### 감사 로그(Audit Log) 기반 변경 추적
-- `actionType`, `targetType`, `targetId` 분리로 확장성 확보
-- 접속 IP 및 User-Agent 정보를 함께 저장하여 보안 사고 대비
-- 데이터 변경 전/후 필드를 **JSON diff 데이터로 직렬화하여 저장**
+<h3>1. 역할 기반 접근 제어 (RBAC)</h3>
 
-### 운영 데이터 무결성을 위한 상품 상태 정책
-- `ACTIVE`, `HIDDEN`, `SOLD_OUT`, `DELETED` 상태 정의
-- **재고 0 도달 시 자동으로 SOLD_OUT 전환** 로직 격리
-- 삭제 데이터 복구 및 추적을 위한 **Soft Delete 전략** 적용
+<ul>
+  <li><b>ADMIN (전체 관리자):</b> 시스템의 모든 제어권을 보유하며 회원 관리, 권한 설정, 전체 감사 로그 조회를 수행</li>
+  <li><b>MD (운영 관리자):</b> 상품 등록 및 카테고리 관리 등 운영 실무 권한만 부여, 보안 및 설정 영역 접근 차단</li>
+</ul>
 
-<hr/>
+<h3>2. 데이터 무결성 및 감사 로그</h3>
 
-## 4. 트러블 슈팅
-
-### [Issue 1] EC2 환경 배포 중 메모리 부족(OOM) 해결
-- **문제:** 프리티어(RAM 1GB) 환경에서 빌드 및 다중 컨테이너 구동 시 프로세스 강제 종료 발생
-- **해결:** EBS 디스크 공간을 활용한 **Swap 메모리(2GB) 할당**으로 가용 메모리 확보
-- **결과:** 인스턴스 사양 업그레이드 없이 안정적인 서버 인프라 유지
-
-### [Issue 2] Cloudflare Flexible SSL 환경 무한 리다이렉트 해결
-- **문제:** HTTPS 접속 시 `ERR_TOO_MANY_REDIRECTS` 오류 발생
-- **원인:** Cloudflare-Nginx 간 통신 프로토콜 충돌(HTTP/HTTPS)에 따른 무한 루프 확인
-- **해결:** Nginx 설정 내 HTTPS 강제 리다이렉트 제거 및 `X-Forwarded-Proto` 헤더 명시
-- **결과:** 정상적인 HTTPS 통신 및 도메인 기반 라우팅 성공
+<ul>
+  <li><b>감사 로그 (Audit Log):</b> 데이터 변경 전/후 상태를 JSON diff 형식으로 직렬화하여 완벽한 변경 추적성 확보</li>
+  <li><b>상품 상태 정책:</b> 재고 0 도달 시 자동으로 SOLD_OUT 전환 로직 격리 및 Soft Delete 전략 적용</li>
+</ul>
 
 <hr/>
 
-## 5. Next Step
-- **데이터베이스 백업 자동화**: crontab 및 S3 연동 정기 백업 파이프라인 구축
-- **대시보드 캐싱**: 통계 쿼리 부하 절감을 위한 Redis 캐시 도입
+<h2>4. 해결한 주요 문제 (Trouble Shooting)</h2>
+
+<h3>1. EC2 프리티어 메모리 부족 (OOM) 해결</h3>
+
+<ul>
+  <li><b>문제:</b> RAM 1GB 환경에서 빌드 시 프로세스 강제 종료 발생</li>
+  <li><b>해결:</b> EBS 디스크 공간을 활용한 2GB Swap 메모리 할당으로 가용 메모리 확보</li>
+  <li><b>결과:</b> 인스턴스 사양 업그레이드 없이 안정적인 서버 인프라 유지</li>
+</ul>
+
+<h3>2. Cloudflare SSL 무한 리다이렉트 해결</h3>
+
+<ul>
+  <li><b>문제:</b> HTTPS 접속 시 ERR_TOO_MANY_REDIRECTS 오류 발생</li>
+  <li><b>원인:</b> Cloudflare(Flexible SSL)와 Nginx 간 통신 프로토콜 충돌</li>
+  <li><b>해결:</b> Nginx 내 HTTPS 강제 리다이렉트 제거 및 X-Forwarded-Proto 헤더 명시</li>
+  <li><b>결과:</b> 정상적인 HTTPS 통신 및 도메인 기반 라우팅 성공</li>
+</ul>
+
+<hr/>
+
+<h2>5. 확장 가능성 (Next Step)</h2>
+
+<ul>
+  <li><b>결제 시스템 통합:</b> PG사 연동을 통한 결제/취소 및 재고 트랜잭션 보장 로직 구현</li>
+  <li><b>데이터베이스 백업 자동화:</b> S3 연동 정기 백업 파이프라인 구축</li>
+  <li><b>대시보드 성능 최적화:</b> Redis 캐시 도입을 통한 통계 쿼리 부하 절감</li>
+</ul>
