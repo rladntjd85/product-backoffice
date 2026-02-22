@@ -29,11 +29,12 @@ spring:
   thymeleaf:
     cache: false
 
-# JWT 설정 (공통) - 이 부분이 누락되어 502 에러가 발생했었습니다.
-jwt:
-  # 환경변수가 없으면 뒤의 기본값을 사용 (32자 이상 필수)
-  secret: ${JWT_SECRET_KEY:thisisadefaultsecretkeyatleast32characterslong}
-  expiration: 86400000 # 24시간
+# [공통 설정 구역]
+security:
+  jwt:
+    # 에러 로그에 찍힌 이름인 'security.jwt.secret'을 정확히 맞춥니다.
+    secret: ${SECURITY_JWT_SECRET:this-is-a-very-long-secret-key-at-least-32-bytes!!}
+    expiration: 86400000 # 24시간
 
 ---
 # [서버 환경] - prod 프로필이 활성화될 때 적용됨
