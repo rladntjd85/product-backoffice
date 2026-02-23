@@ -16,7 +16,7 @@ spring:
       resolve-lazily: true
 
   profiles:
-    active: local # 기본값은 로컬
+    active: local
 
   jpa:
     open-in-view: false
@@ -29,12 +29,10 @@ spring:
   thymeleaf:
     cache: false
 
-# [공통 설정 구역]
 security:
   jwt:
-    # 에러 로그에 찍힌 이름인 'security.jwt.secret'을 정확히 맞춥니다.
     secret: ${SECURITY_JWT_SECRET:this-is-a-very-long-secret-key-at-least-32-bytes!!}
-    expiration: 86400000 # 24시간
+    expiration: 86400000
 
 ---
 # [서버 환경] - prod 프로필이 활성화될 때 적용됨
@@ -60,7 +58,14 @@ spring:
   thymeleaf:
     cache: true
 
+# 로그 파일 생성 및 관리 설정 추가
 logging:
+  file:
+    name: /home/ubuntu/logs/spring.log  # CloudWatch 에이전트가 읽어갈 경로
+  logback:
+    rollingpolicy:
+      max-history: 7                  # 7일치 로그만 보관하여 디스크 절약
+      max-file-size: 10MB             # 파일당 10MB로 제한
   level:
     root: info
     org.hibernate.SQL: info
