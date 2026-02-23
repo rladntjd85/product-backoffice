@@ -8,14 +8,18 @@ services:
     expose:
       - "8080"
     environment:
-      - JAVA_OPTS=-Xmx512M -Xms512M # 이 줄을 추가하여 메모리 사용량 제한
+      # 타임존 설정 및 메모리 제한 통합
+      - TZ=Asia/Seoul
+      - JAVA_OPTS=-Xmx512M -Xms512M -Duser.timezone=Asia/Seoul
       - SPRING_PROFILES_ACTIVE=prod
       - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
       - SPRING_DATASOURCE_USERNAME=pbuser
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
     volumes:
-      # 서버 실제경로 : 컨테이너 내부경로 (application.yaml 설정과 일치)
+      # 서버 실제경로 : 컨테이너 내부경로
       - /home/ubuntu/upload:/upload
+      # 호스트 서버의 시간 설정을 컨테이너와 동기화
+      - /etc/localtime:/etc/localtime:ro
 
   nginx:
     image: nginx:latest
@@ -25,5 +29,9 @@ services:
       - spring
     ports:
       - "80:80"
+    environment:
+      # Nginx 로그 시간도 한국 시간으로 기록되도록 설정
+      - TZ=Asia/Seoul
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
+      - /etc/localtime:/etc/localtime:ro
