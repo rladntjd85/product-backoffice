@@ -56,3 +56,9 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - /etc/localtime:/etc/localtime:ro
       - /home/ubuntu/logs:/home/ubuntu/logs
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-northeast-2
+        awslogs-group: spring-boot-logs
+        awslogs-stream: spring-container
