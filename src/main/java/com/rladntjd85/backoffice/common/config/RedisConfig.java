@@ -50,8 +50,9 @@ public class RedisConfig {
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(1))
                 .disableCachingNullValues()
+                // 팩트 체크: 명시적으로 serializer를 다시 한번 정의하여 주입합니다.
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer));
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer(objectMapper)));
 
         // 4. 설정이 입혀진 CacheManager 반환
         return RedisCacheManager.builder(connectionFactory)
