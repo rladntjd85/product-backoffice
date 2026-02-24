@@ -24,32 +24,32 @@ import java.time.Duration;
 public class RedisConfig {
 
     @Bean
-    @Primary // 스프링이 이 CacheManager를 최우선으로 사용하도록 강제함
+    @Primary
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        // 1. ObjectMapper 설정 (인자 3개 버전)
+        // 1. ObjectMapper 상세 설정
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
+        // EVERYTHING 대신 최신 표준인 NON_FINAL 사용
         objectMapper.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance,
                 ObjectMapper.DefaultTyping.NON_FINAL,
                 JsonTypeInfo.As.PROPERTY
         );
 
-        // 2. Serializer 설정
+        // 2. Generic 시리얼라이저에 커스텀 ObjectMapper 주입
         GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
-        // 3. Redis 캐시 상세 설정
+        // 3. Redis 캐시 기본 설정
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(30))
                 .disableCachingNullValues()
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer));
 
-        // 4. CacheManager 생성 및 반환
-        return RedisCacheManager.RedisCacheManagerBuilder
-                .fromConnectionFactory(connectionFactory)
+        // 4. CacheManager 직접 생성 (이 부분이 누락되면 설정이 안 먹힙니다)
+        return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
                 .build();
     }
