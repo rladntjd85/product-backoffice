@@ -1,9 +1,11 @@
 package com.rladntjd85.backoffice.dashboard.service;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.rladntjd85.backoffice.audit.repository.AuditLogRepository;
 import com.rladntjd85.backoffice.product.domain.ProductStatus;
 import com.rladntjd85.backoffice.product.repository.ProductRepository;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
@@ -99,26 +101,20 @@ public class AdminDashboardService {
         );
     }
 
-    @JsonTypeInfo(
-            use = JsonTypeInfo.Id.CLASS,
-            include = JsonTypeInfo.As.PROPERTY,
-            property = "@class"
-    )
-    public record DashboardSummaryDto(
-            long totalProducts,
-            long activeProducts,
-            long hiddenProducts,
-            long soldOutProducts,
-            long deletedProducts,
-            long todayEvents,
-            long todayLoginFail
-    ) {}
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public class DashboardSummaryDto {
 
-    @JsonTypeInfo(
-            use = JsonTypeInfo.Id.CLASS,
-            include = JsonTypeInfo.As.PROPERTY,
-            property = "@class"
-    )
+        private long totalProducts;
+        private long activeProducts;
+        private long hiddenProducts;
+        private long soldOutProducts;
+        private long deletedProducts;
+        private long todayEvents;
+        private long todayLoginFail;
+    }
+
     public record AuditDailyDto(
             String date,
             long count
