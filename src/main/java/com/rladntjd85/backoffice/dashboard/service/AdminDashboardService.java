@@ -1,5 +1,6 @@
 package com.rladntjd85.backoffice.dashboard.service;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.rladntjd85.backoffice.audit.repository.AuditLogRepository;
 import com.rladntjd85.backoffice.product.domain.ProductStatus;
 import com.rladntjd85.backoffice.product.repository.ProductRepository;
@@ -98,6 +99,11 @@ public class AdminDashboardService {
         );
     }
 
+    @JsonTypeInfo(
+            use = JsonTypeInfo.Id.CLASS,
+            include = JsonTypeInfo.As.PROPERTY,
+            property = "@class"
+    )
     public record DashboardSummaryDto(
             long totalProducts,
             long activeProducts,
@@ -106,11 +112,17 @@ public class AdminDashboardService {
             long deletedProducts,
             long todayEvents,
             long todayLoginFail
-    ) {
-    }
+    ) {}
 
-    public record AuditDailyDto(String day, long count) {
-    }
+    @JsonTypeInfo(
+            use = JsonTypeInfo.Id.CLASS,
+            include = JsonTypeInfo.As.PROPERTY,
+            property = "@class"
+    )
+    public record AuditDailyDto(
+            String date,
+            long count
+    ) {}
 
     public record ActionTopDto(String actionType, long count) {
     }
