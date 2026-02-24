@@ -1,12 +1,11 @@
 package com.rladntjd85.backoffice.dashboard.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class DashboardSummaryDto {
     private long totalProducts;
     private long activeProducts;

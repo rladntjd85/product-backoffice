@@ -1,3 +1,12 @@
 package com.rladntjd85.backoffice.dashboard.dto;
 
-public record AuditDailyDto(String date, long count) {}
+import lombok.*;
+
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AuditDailyDto {
+    private String date;
+    private long count;
+}
