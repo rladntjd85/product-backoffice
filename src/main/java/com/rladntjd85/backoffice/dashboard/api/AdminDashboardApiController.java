@@ -4,6 +4,7 @@ import com.rladntjd85.backoffice.dashboard.service.AdminDashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.rladntjd85.backoffice.dashboard.dto.*;
 
 import java.util.List;
 
@@ -20,7 +21,7 @@ public class AdminDashboardApiController {
      */
     @GetMapping("/summary")
     @PreAuthorize("hasAnyRole('ADMIN','MD')")
-    public AdminDashboardService.DashboardSummaryDto summary() {
+    public DashboardSummaryDto summary() {
         return dashboardService.summary();
     }
 
@@ -29,7 +30,7 @@ public class AdminDashboardApiController {
      */
     @GetMapping("/stock-alerts")
     @PreAuthorize("hasAnyRole('ADMIN','MD')")
-    public AdminDashboardService.StockAlertsDto stockAlerts(
+    public StockAlertsDto stockAlerts(
             @RequestParam(defaultValue = "5") int threshold,
             @RequestParam(defaultValue = "10") int limit
     ) {
@@ -41,7 +42,7 @@ public class AdminDashboardApiController {
      */
     @GetMapping("/audit-daily")
     @PreAuthorize("hasRole('ADMIN')")
-    public List<AdminDashboardService.AuditDailyDto> auditDaily(
+    public List<AuditDailyDto> auditDaily(
             @RequestParam(defaultValue = "7") int days
     ) {
         return dashboardService.auditDaily(days);
@@ -52,7 +53,7 @@ public class AdminDashboardApiController {
      */
     @GetMapping("/audit-top-actions")
     @PreAuthorize("hasRole('ADMIN')")
-    public List<AdminDashboardService.ActionTopDto> auditTopActions(
+    public List<ActionTopDto> auditTopActions(
             @RequestParam(defaultValue = "7") int days,
             @RequestParam(defaultValue = "8") int limit
     ) {
@@ -64,7 +65,7 @@ public class AdminDashboardApiController {
      */
     @GetMapping("/recent-audits")
     @PreAuthorize("hasRole('ADMIN')")
-    public List<AdminDashboardService.RecentAuditDto> recentAudits(
+    public List<RecentAuditDto> recentAudits(
             @RequestParam(defaultValue = "20") int limit
     ) {
         return dashboardService.recentAudits(limit);
