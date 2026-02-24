@@ -30,19 +30,15 @@ public class AdminDashboardService {
         LocalDateTime from = today.atStartOfDay();
         LocalDateTime to = today.plusDays(1).atStartOfDay();
 
-        long totalProducts = productRepository.countAllProducts();
-        long active = productRepository.countByStatus(ProductStatus.ACTIVE);
-        long hidden = productRepository.countByStatus(ProductStatus.HIDDEN);
-        long soldOut = productRepository.countByStatus(ProductStatus.SOLD_OUT);
-        long deleted = productRepository.countByStatus(ProductStatus.DELETED);
-
-        long todayEvents = auditLogRepository.countBetween(from, to);
-        long todayLoginFail = auditLogRepository.countLoginFailBetween(from, to);
-
-        return new DashboardSummaryDto(
-                totalProducts, active, hidden, soldOut, deleted,
-                todayEvents, todayLoginFail
-        );
+        return DashboardSummaryDto.builder()
+                .totalProducts(productRepository.countAllProducts())
+                .activeProducts(productRepository.countByStatus(ProductStatus.ACTIVE))
+                .hiddenProducts(productRepository.countByStatus(ProductStatus.HIDDEN))
+                .soldOutProducts(productRepository.countByStatus(ProductStatus.SOLD_OUT))
+                .deletedProducts(productRepository.countByStatus(ProductStatus.DELETED))
+                .todayEvents(auditLogRepository.countBetween(from, to))
+                .todayLoginFail(auditLogRepository.countLoginFailBetween(from, to))
+                .build();
     }
 
     @Cacheable(value = "auditDaily", key = "#days")
@@ -50,17 +46,19 @@ public class AdminDashboardService {
         LocalDateTime from = LocalDate.now().minusDays(days - 1L).atStartOfDay();
         var raw = auditLogRepository.dailyCountsSince(from);
 
-        Map<LocalDate, Long> map = new LinkedHashMap<>();
+        Map<String, Long> map = new LinkedHashMap<>();
         for (int i = days - 1; i >= 0; i--) {
-            map.put(LocalDate.now().minusDays(i), 0L);
+            map.put(LocalDate.now().minusDays(i).toString(), 0L);
         }
         for (var r : raw) {
-            LocalDate d = r.getD().toLocalDate();
-            map.put(d, r.getCnt());
+            String d = r.getD().toLocalDate().toString();
+            if (map.containsKey(d)) {
+                map.put(d, r.getCnt());
+            }
         }
 
         return map.entrySet().stream()
-                .map(e -> new AuditDailyDto(e.getKey().toString(), e.getValue()))
+                .map(e -> new AuditDailyDto(e.getKey(), e.getValue()))
                 .toList();
     }
 
@@ -78,13 +76,8 @@ public class AdminDashboardService {
         var logs = auditLogRepository.findTop20ByOrderByCreatedAtDesc();
         return logs.stream().limit(limit)
                 .map(a -> new RecentAuditDto(
-                        a.getId(),
-                        a.getCreatedAt().toString(),
-                        a.getActionType(),
-                        a.getTargetType(),
-                        a.getTargetId(),
-                        a.getActorUserId(),
-                        a.getIp()
+                        a.getId(), a.getCreatedAt().toString(), a.getActionType(),
+                        a.getTargetType(), a.getTargetId(), a.getActorUserId(), a.getIp()
                 ))
                 .toList();
     }
