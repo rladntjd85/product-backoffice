@@ -42,8 +42,9 @@ services:
       - TZ=Asia/Seoul
       - JAVA_OPTS=-Xmx512M -Xms512M -Duser.timezone=Asia/Seoul
       - SPRING_PROFILES_ACTIVE=prod
+      # URL의 호스트명은 서비스 이름인 mysql이나 컨테이너 이름인 pb-mysql 모두 가능하지만, 일관성을 위해 pb-mysql 권장
       - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
-      - SPRING_DATASOURCE_USERNAME=root # root 사용자로 설정됨
+      - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
@@ -70,7 +71,7 @@ services:
     networks: # 추가
       - app-network
 
-# 하단에 네트워크 정의 추가
+# 하단에 네트워크 브릿지 정의
 networks:
   app-network:
     driver: bridge
