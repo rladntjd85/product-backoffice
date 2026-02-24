@@ -27,24 +27,33 @@ public class RedisConfig {
     @Bean
     @Primary
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+        // 1. ObjectMapper를 직접 로컬 변수로 선언하여 설정을 완벽히 제어합니다.
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-        // 팩트 체크: 모든 객체(Object) 타입에 대해 클래스 정보를 강제 포함하도록 설정합니다.
+        // 모든 객체에 대해 클래스 정보를 포함하도록 검증기 설정
         PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
                 .allowIfSubType(Object.class)
                 .build();
 
-        objectMapper.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+        objectMapper.activateDefaultTyping(
+                ptv,
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
+        );
 
+        // 2. 이 ObjectMapper를 사용하는 전용 시리얼라이저 생성
         GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
+        // 3. 캐시 설정 적용
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(1))
+                .disableCachingNullValues()
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer));
 
+        // 4. 설정이 입혀진 CacheManager 반환
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
                 .build();
