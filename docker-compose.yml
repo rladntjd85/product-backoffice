@@ -1,16 +1,16 @@
 version: '3.8'
 
 services:
-  # 1. 데이터베이스 서비스 추가
+  # 1. 데이터베이스 서비스
   mysql:
     image: mysql:8.0.43
     container_name: pb-mysql
     restart: always
     environment:
       - TZ=Asia/Seoul
+      # .env 파일의 값을 참조
       - MYSQL_ROOT_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - MYSQL_DATABASE=pb
-    # 기존 데이터 보존을 위한 볼륨 매핑
     volumes:
       - /home/ubuntu/compose/mysql_data:/var/lib/mysql
       - /etc/localtime:/etc/localtime:ro
@@ -19,29 +19,42 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_0900_ai_ci
 
-  # 2. 스프링 부트 애플리케이션 서비스
+  # 2. 레디스 서비스 (새로 추가)
+  redis:
+    image: redis:alpine
+    container_name: redis
+    # t3.small(2GB) 최적화: 256MB 제한 및 LRU 정책 적용
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    restart: always
+
+  # 3. 스프링 부트 애플리케이션 서비스
   spring:
     image: ${DOCKER_USERNAME}/backoffice:latest
     container_name: spring
     restart: always
-    # MySQL이 먼저 실행된 후 Spring이 뜨도록 설정
     depends_on:
       - mysql
+      - redis
     expose:
       - "8080"
     environment:
       - TZ=Asia/Seoul
       - JAVA_OPTS=-Xmx512M -Xms512M -Duser.timezone=Asia/Seoul
       - SPRING_PROFILES_ACTIVE=prod
-      # JDBC URL의 호스트명을 컨테이너 이름인 'mysql'로 변경해야 함
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/pb?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-      - SPRING_DATASOURCE_USERNAME=pbuser
+      # 호스트명을 mysql 컨테이너 이름인 'pb-mysql'로 수정
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      # Redis 연동 설정 추가
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
     volumes:
       - /home/ubuntu/upload:/upload
       - /etc/localtime:/etc/localtime:ro
 
-  # 3. 엔진엑스 프록시 서비스
+  # 4. 엔진엑스 프록시 서비스
   nginx:
     image: nginx:latest
     container_name: nginx

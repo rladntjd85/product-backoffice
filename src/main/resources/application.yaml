@@ -41,6 +41,12 @@ spring:
     activate:
       on-profile: prod
 
+  # 여기에 추가
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: pbuser
