@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public class AuditDailyDto {
-    private String date;
+    private String day;
     private long count;
 }
