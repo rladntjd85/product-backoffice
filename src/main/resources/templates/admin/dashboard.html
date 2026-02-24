@@ -30,7 +30,9 @@
                             <span class="text-muted small">audit_log</span>
                         </div>
                         <div class="card-body">
-                            <canvas id="dailyChart" height="120"></canvas>
+                            <div style="position: relative; height: 250px; width: 100%;">
+                                <canvas id="dailyChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -42,7 +44,9 @@
                             <span class="text-muted small">최근 7일</span>
                         </div>
                         <div class="card-body">
-                            <canvas id="topChart" height="120"></canvas>
+                            <div style="position: relative; height: 250px; width: 100%;">
+                                <canvas id="topChart" height="120"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -233,7 +237,15 @@
                     labels: daily.map(x => x.day),
                     datasets: [{label: "events", data: daily.map(x => x.count)}]
                 },
-                options: {plugins: {legend: {display: false}}}
+                options: {
+                    responsive: true, // 컨테이너 크기에 맞춰 반응형으로 작동
+                    maintainAspectRatio: false, // 부모 컨테이너 높이에 맞춰 강제로 늘림
+                    animation: {
+                        duration: 400, // 쪼그라드는 느낌이 싫다면 시간을 조금 더 줄이십시오.
+                        easing: 'linear' // 부드럽게 펼쳐지도록 변경
+                    },
+                    plugins: {legend: {display: false}}
+                }
             });
 
             if (topChart) topChart.destroy();
