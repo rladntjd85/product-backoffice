@@ -4,6 +4,7 @@ import com.rladntjd85.backoffice.audit.repository.AuditLogRepository;
 import com.rladntjd85.backoffice.product.domain.ProductStatus;
 import com.rladntjd85.backoffice.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +23,7 @@ public class AdminDashboardService {
     private final ProductRepository productRepository;
     private final AuditLogRepository auditLogRepository;
 
-//    @Cacheable(value = "dashboardSummary", key = "'all'")
+    @Cacheable(value = "dashboardSummary", key = "'all'")
     public DashboardSummaryDto summary() {
         LocalDate today = LocalDate.now(); // KST 서버 기준
         LocalDateTime from = today.atStartOfDay();
@@ -43,7 +44,7 @@ public class AdminDashboardService {
         );
     }
 
-//    @Cacheable(value = "auditDaily", key = "#days")
+    @Cacheable(value = "auditDaily", key = "#days")
     public List<AuditDailyDto> auditDaily(int days) {
         LocalDateTime from = LocalDate.now().minusDays(days - 1L).atStartOfDay();
         var raw = auditLogRepository.dailyCountsSince(from);

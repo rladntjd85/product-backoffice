@@ -44,7 +44,7 @@ spring:
   # 여기에 추가
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      host: redis
       port: ${SPRING_DATA_REDIS_PORT:6379}
 
   datasource:
