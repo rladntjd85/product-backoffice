@@ -5,6 +5,8 @@ services:
     image: mysql:8.0.43
     container_name: pb-mysql
     restart: always
+    ports:
+      - "3306:3306"
     environment:
       - TZ=Asia/Seoul
       - MYSQL_ROOT_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
