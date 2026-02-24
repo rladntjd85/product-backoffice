@@ -39,7 +39,7 @@ public class RedisConfig {
 
         objectMapper.activateDefaultTyping(
                 ptv,
-                ObjectMapper.DefaultTyping.NON_FINAL,
+                ObjectMapper.DefaultTyping.EVERYTHING, // 더 광범위한 타입 정보 포함
                 JsonTypeInfo.As.PROPERTY
         );
 
